@@ -73,15 +73,31 @@ renders as a bare `<img>` with no caption — `npm run check` fails on this.
 the custom domain lands, and from the root of `prajno.com` after. Relative paths are correct
 in both; an absolute `/images/…` breaks the first.
 
-The home page is `site/index.md`. Its `{{articles}}` placeholder generates the article list
-from front matter, so **publishing a new article never means editing the home page**.
+The home page is `site/index.md`. Its `{{articles}}` placeholder generates the article
+accordions from front matter, so **publishing a new article never means editing the home
+page**.
+
+Only `content.md` is built. Other markdown alongside it (e.g. `articles/pizza-mvp/medium.md`,
+the Medium-shaped draft of the case study) is source material the build ignores. Rich
+articles may pre-render diagrams to SVG under `images/` — commit the SVG, keep the Mermaid
+source in the originating repo.
 
 ## Architecture
 
-- `site/template.html` — the one shared page shell and stylesheet. Every page uses it; there
-  is no per-article template. Presentation changes go here.
+- `site/template.html` — the shared page shell and stylesheet: the home page and any
+  article that doesn't bring its own. It also carries the home page's accordion: each
+  listed article renders as a full-width panel with an iframe peek of the article page —
+  a click expands it (collapsing the others) under the sticky site header, and the same
+  click is forwarded into the iframe. Presentation changes for shared pages go here.
+- **Per-article template override** — if `articles/<slug>/template.html` exists, that
+  article is rendered with it instead of the shared shell, and its presentation (CSS/JS)
+  lives entirely in that file, scoped to that page alone. The build fills `{{title}}`,
+  `{{meta}}`, `{{content}}`, and `{{nav}}` — the nav is generated from `content.md`: a
+  `<p class="eyebrow">Label</p>` line immediately before an `## Heading` becomes a rail
+  link (eyebrow = label, heading = target). `articles/pizza-mvp/` is the one such article.
 - `build.mjs` — markdown → `dist/`. Front matter, the standalone-image → `<figure>`
-  transform, the article listing, meta/Open Graph tags, and `dist/CNAME`.
+  transform, heading ids + nav extraction, the article accordion listing, meta/Open Graph
+  tags (front-matter `image:` overrides the og:image), and `dist/CNAME`.
 - `serve.mjs` — dev server on :8765. Builds `dist/`, serves it, rebuilds and reloads the
   browser on save. Live-reload is injected per request, so it never reaches a deploy.
 - `check.mjs` — the pre-PR gate above.

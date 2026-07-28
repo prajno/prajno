@@ -62,16 +62,49 @@ function metaTags({ data, url, image }) {
   return tags.join('\n');
 }
 
-export function renderPage({ template, data, contentHtml, url, image }) {
+export function renderPage({ template, data, contentHtml, url, image, nav }) {
+  // Function replacers throughout: a plain replacement STRING interprets $&, $`, $' — so
+  // e.g. a $` inside a code fence would splice the whole template head into the article.
   return template
-    .replace(/\{\{title\}\}/g, escape(data.title ?? 'Untitled'))
-    .replace('{{meta}}', metaTags({ data, url, image }))
-    .replace('{{subtitle}}', data.subtitle ? `<p class="subtitle">${escape(data.subtitle)}</p>` : '')
-    .replace('{{content}}', contentHtml);
+    .replace(/\{\{title\}\}/g, () => escape(data.title ?? 'Untitled'))
+    .replace('{{meta}}', () => metaTags({ data, url, image }))
+    .replace('{{subtitle}}', () =>
+      data.subtitle ? `<p class="subtitle">${escape(data.subtitle)}</p>` : '')
+    .replace('{{nav}}', () => nav ?? '')
+    .replace('{{content}}', () => contentHtml);
 }
 
 export function renderMarkdown(body) {
   return figures(marked.parse(body, { async: false }));
+}
+
+// Every h2 gets an id. A `<p class="eyebrow">Label</p>` island immediately before an
+// `## Heading` marks a rail-nav section: the eyebrow is the short label, the heading the
+// target. Articles without eyebrows simply produce an empty nav.
+export function navigation(html) {
+  const nav = [];
+  const used = new Set();
+  const slugify = (heading) =>
+    heading
+      .replace(/<[^>]+>/g, '')
+      .replace(/&#?[a-z0-9]+;/gi, ' ') // named AND numeric entities (&#39; etc.)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  const withIds = html.replace(
+    // The eyebrow's text must not cross tags ([^<]+), or a hero eyebrow far above the
+    // first h2 would swallow everything in between as its "label".
+    /(<p class="eyebrow">([^<]+)<\/p>\s*)?<h2>([\s\S]*?)<\/h2>/g,
+    (match, _eyebrow, label, heading) => {
+      let id = slugify(heading) || 'section';
+      for (let n = 2; used.has(id); n += 1) id = `${slugify(heading) || 'section'}-${n}`;
+      used.add(id);
+      if (label) nav.push({ id, label: label.trim() });
+      return match.replace('<h2>', () => `<h2 id="${id}">`);
+    },
+  );
+  const links = nav.map(({ id, label }) => `<a href="#${id}">${label}</a>`).join('\n  ');
+  return { html: withIds, navHtml: links };
 }
 
 // Every article, newest first. `draft: true` keeps one out of the build entirely.
@@ -79,7 +112,10 @@ export async function readArticles() {
   const entries = await readdir(articlesDir, { withFileTypes: true });
   const articles = [];
   for (const entry of entries.filter((e) => e.isDirectory())) {
-    const source = await readFile(join(articlesDir, entry.name, 'content.md'), 'utf8');
+    // A directory with no content.md isn't an article — a scratch folder shouldn't be able
+    // to break the whole build.
+    const source = await readFile(join(articlesDir, entry.name, 'content.md'), 'utf8').catch(() => null);
+    if (source === null) continue;
     const { data, body, offset } = parseFrontMatter(source);
     if (String(data.draft) === 'true') continue;
     articles.push({ slug: entry.name, dir: join(articlesDir, entry.name), data, body, offset });
@@ -94,21 +130,40 @@ const formatDate = (date) =>
       })
     : '';
 
+// Each article renders as an accordion: a bar (toggle + permalink) over an iframe of the
+// article page. Collapsed shows a fixed-height peek; the home page's script handles
+// expand/collapse and forwards a collapsed click into the iframe.
 function articleList(articles) {
   const items = articles.map(({ slug, data }) => {
-    const date = data.date
-      ? `\n    <time datetime="${escape(data.date)}">${formatDate(data.date)}</time>`
-      : '';
-    const summary = data.subtitle ? `\n    <p class="summary">${escape(data.subtitle)}</p>` : '';
-    return `  <li>\n    <a href="articles/${slug}/">${escape(data.title)}</a>${summary}${date}\n  </li>`;
+    const meta = [
+      data.subtitle ? escape(data.subtitle) : '',
+      data.date ? `<time datetime="${escape(data.date)}">${formatDate(data.date)}</time>` : '',
+    ].filter(Boolean).join(' · ');
+    const href = `articles/${encodeURIComponent(slug)}/`;
+    return `  <article class="acc" data-slug="${escape(slug)}">
+    <div class="acc-bar">
+      <button class="acc-toggle" type="button" aria-expanded="false">
+        <span class="acc-title">${escape(data.title)}</span>
+        <span class="acc-meta">${meta}</span>
+      </button>
+      <a class="acc-open" href="${href}" aria-label="Open ${escape(data.title)} as its own page">↗</a>
+    </div>
+    <div class="acc-panel">
+      <iframe src="${href}" title="${escape(data.title)}" loading="lazy" tabindex="-1"></iframe>
+      <div class="acc-shield" aria-hidden="true"><span>click to expand</span></div>
+    </div>
+  </article>`;
   });
-  return `<ul class="articles">\n${items.join('\n')}\n</ul>`;
+  return `<div class="articles">\n${items.join('\n')}\n</div>`;
 }
 
-// First image referenced by an article, as an absolute URL — the og:image for that page.
-function firstImage(article) {
-  const match = article.body.match(/!\[[^\]]*\]\(([^)\s"]+)/);
-  return match ? `${SITE_URL}/articles/${article.slug}/${match[1]}` : undefined;
+// The og:image for an article: an explicit `image:` in front matter wins, else the first
+// image referenced in the body. Either way, made absolute.
+function articleImage(article) {
+  const path = article.data.image ?? article.body.match(/!\[[^\]]*\]\(([^)\s"]+)/)?.[1];
+  if (!path) return undefined;
+  if (/^(https?:)?\/\//.test(path)) return path; // already absolute
+  return `${SITE_URL}/articles/${article.slug}/${path.replace(/^\//, '')}`;
 }
 
 export async function build() {
@@ -121,14 +176,19 @@ export async function build() {
   for (const article of articles) {
     const out = join(dist, 'articles', article.slug);
     await mkdir(out, { recursive: true });
+    // An article may ship its own template.html — its presentation then lives entirely in
+    // that file and touches no other page (the pizza-mvp case study does this).
+    const ownTemplate = await readFile(join(article.dir, 'template.html'), 'utf8').catch(() => null);
+    const { html: contentHtml, navHtml } = navigation(renderMarkdown(article.body));
     await writeFile(
       join(out, 'index.html'),
       renderPage({
-        template,
+        template: ownTemplate ?? template,
         data: article.data,
-        contentHtml: renderMarkdown(article.body),
+        contentHtml,
         url: `${SITE_URL}/articles/${article.slug}/`,
-        image: firstImage(article),
+        image: articleImage(article),
+        nav: navHtml,
       }),
     );
     await cp(join(article.dir, 'images'), join(out, 'images'), { recursive: true }).catch(() => {});
@@ -139,7 +199,7 @@ export async function build() {
   // generated <ul> isn't nested inside one.
   const homeHtml = renderMarkdown(home.body).replace(
     /<p>\{\{articles\}\}<\/p>|\{\{articles\}\}/,
-    articleList(articles),
+    () => articleList(articles), // function replacer — see renderPage
   );
   await writeFile(
     join(dist, 'index.html'),

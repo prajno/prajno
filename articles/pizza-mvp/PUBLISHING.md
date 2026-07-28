@@ -4,30 +4,32 @@ This article also lives on the site at `prajno.com/articles/pizza-mvp/`. These a
 steps for cross-posting it to Medium, which is a manual paste — Medium's API closed to new
 integrations in Jan 2025.
 
-Everything the article needs is in this folder: the source (`content.md`), the seven images
-(`images/`), and the raw smoke output the terminal shot was made from (`smoke-output.txt`).
-Nothing here links to the private Pizza repo.
+Two sources live in this folder, and only one of them is for Medium:
 
-Authoring conventions — front matter, the standalone-image figure rule, `npm start` — are in
-the repo-root `CLAUDE.md`. The built page is `dist/articles/pizza-mvp/index.html`; it is
-generated, gitignored, and never edited by hand.
+- `content.md` — the rich site version (own `template.html`, animated demo, pre-rendered
+  diagrams). This is what the build publishes at `prajno.com/articles/pizza-mvp/`; its
+  interactive parts don't survive Medium, so don't paste from it.
+- `medium.md` — the Medium-shaped draft: linear prose, code as image screenshots
+  (`images/`). The build ignores it; it exists only for this flow.
+
+Also here in `images/`: the seven Medium figure PNGs plus the four pre-rendered SVG
+diagrams the site version uses, and the raw smoke output the terminal shot was made from
+(`smoke-output.txt`). Nothing in this folder links to the private Pizza repo.
 
 ## Steps
 
-1. Run `npm start` from the repo root and open
-   <http://localhost:8765/articles/pizza-mvp/>.
-2. Select all the article text (⌘A, ⌘C) and paste into a new Medium story
+1. Render `medium.md` in any markdown preview (VS Code's is fine).
+2. Select all the rendered article text and paste into a new Medium story
    (medium.com → Write). Headings, bold, italics, the pull quote, and the bullet
    list survive the paste. The images will NOT carry over — delete any stray
-   caption lines the paste leaves behind. The subtitle line pastes as a plain
-   paragraph: select it and apply Medium's small-T subtitle style (or delete it
-   and re-enter it via the story's subtitle field).
+   caption lines the paste leaves behind. Enter the subtitle via the story's
+   subtitle field.
 3. At each figure position, click Medium's `+` → image, and upload the matching
    file from `images/`, then retype the caption:
 
    | Position (after…) | File | Caption |
    |---|---|---|
-   | 3rd paragraph ("…before any code existed.") | `host-round-mockup.png` | A design mockup from the repo — the shipped screen uses the same CSS. |
+   | 2nd paragraph ("…before any code existed.") | `host-round-mockup.png` | A design mockup from the repo — the shipped screen uses the same CSS. |
    | "…no app, no accounts, no install" paragraph | `host-lobby.png` | The live lobby: scan, type a name, you're in. |
    | "Specs an agent can be handed" section | `issue-spec.png` | The issue template, abridged from the round-engine issue. |
    | "Make cheating a compile error", after 1st paragraph | `code-questionwire.png` | The wire type structurally cannot carry the answer. |

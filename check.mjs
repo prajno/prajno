@@ -13,7 +13,7 @@ import { access, readdir, readFile } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import {
-  build, dist, parseFrontMatter, readArticles, renderMarkdown, root, siteDir,
+  articlesDir, build, dist, parseFrontMatter, readArticles, renderMarkdown, root, siteDir,
 } from './build.mjs';
 
 const run = promisify(execFile);
@@ -77,11 +77,23 @@ function imagesOnOwnLine(label, body, offset) {
 
 for (const article of articles) {
   const label = `articles/${article.slug}/content.md`;
+  if (!/^[a-z0-9-]+$/.test(article.slug)) {
+    fail(`articles/${article.slug}/`, 'slug must be lowercase letters, digits, and dashes — it is the URL');
+  }
   for (const field of ['title', 'subtitle', 'date']) {
     if (!article.data[field]) fail(label, `front matter is missing \`${field}\``);
   }
   if (article.data.date && !/^\d{4}-\d{2}-\d{2}$/.test(article.data.date)) {
     fail(label, `date "${article.data.date}" is not YYYY-MM-DD`);
+  }
+  // The og:image never appears as an href/src, so the link pass below can't see it.
+  if (article.data.image) {
+    if (/^(https?:)?\/\//.test(article.data.image) || article.data.image.startsWith('/')) {
+      fail(label, `front matter image "${article.data.image}" must be relative to the article directory`);
+    } else {
+      await access(join(articlesDir, article.slug, article.data.image)).catch(() =>
+        fail(label, `front matter image "${article.data.image}" resolves to nothing`));
+    }
   }
   imagesOnOwnLine(label, article.body, article.offset);
 
@@ -104,6 +116,18 @@ for (const slot of ['{{title}}', '{{meta}}', '{{subtitle}}', '{{content}}']) {
   if (!template.includes(slot)) fail('site/template.html', `the ${slot} slot is gone`);
 }
 
+// An article that ships its own template must still carry the slots the renderer fills.
+for (const article of articles) {
+  const own = await readFile(join(articlesDir, article.slug, 'template.html'), 'utf8').catch(() => null);
+  if (!own) continue;
+  for (const slot of ['{{title}}', '{{meta}}', '{{content}}']) {
+    if (!own.includes(slot)) fail(`articles/${article.slug}/template.html`, `the ${slot} slot is gone`);
+  }
+  if (article.body.includes('class="eyebrow"') && !own.includes('{{nav}}')) {
+    notes.push(`articles/${article.slug}/template.html: content has eyebrow sections but the template has no {{nav}} slot — the rail nav will be empty`);
+  }
+}
+
 const structureProblems = sinceLastSection();
 if (structureProblems.length) structureProblems.forEach((p) => bad(p));
 else ok('front matter, image placement, and template slots all as the renderer expects');
@@ -120,6 +144,11 @@ let localCount = 0;
 for (const page of pages) {
   const html = await readFile(page, 'utf8');
   const label = relative(root, page);
+  // A template token in built output means a slot went unfilled — or substitution corrupted
+  // the page (String.replace $-patterns can re-emit tokens).
+  for (const [token] of html.matchAll(/\{\{[a-z]+\}\}/g)) {
+    fail(label, `built page contains unreplaced template token ${token}`);
+  }
   for (const [, url] of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
     if (/^(https?:)?\/\//.test(url)) { external.add(url); continue; }
     if (url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('data:')) continue;

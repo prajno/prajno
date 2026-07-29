@@ -92,6 +92,7 @@
                     font-size: 44px; line-height: 0.98; letter-spacing: 0.01em;
                     text-transform: uppercase; }
   .site-header h1 .dot, .site-header h1 + .subtitle b { color: var(--accent); }
+  .site-header h1 .tld { text-transform: none; } /* the lowercase "com" survives the caps */
   .site-header .subtitle { margin: 4px 0 0; color: var(--muted); font-size: 16.5px; }
 
   /* ————— article accordions ————— */
@@ -213,7 +214,7 @@
 
 <header class="site-header">
   <div class="inner">
-    <h1>{{title}}<span class="dot">.</span></h1>
+    <h1>{{brand}}</h1>
     {{subtitle}}
   </div>
 </header>
@@ -241,8 +242,15 @@
         var WELCOME = "Welcome to my website...";
         var h1 = header.querySelector("h1");
         var original = h1.innerHTML;
-        var finalText = h1.textContent.trim();              // e.g. "Prajno."
-        var typeTitle = finalText.replace(/\.$/, "");       // dot lands with the restore
+        var finalText = h1.textContent.trim();              // e.g. "PRAJNO.com"
+        // Each character of the wordmark, tagged with the class of the span it lives in
+        // (accent dot, lowercase tld) — so the title types out already wearing its styling.
+        var charSpec = [];
+        Array.prototype.forEach.call(h1.childNodes, function (node) {
+          var cls = node.nodeType === 1 ? node.className : null;
+          var text = node.textContent;
+          for (var i = 0; i < text.length; i += 1) charSpec.push({ c: text[i], cls: cls });
+        });
         var skipped = false;
 
         var line = document.createElement("span");
@@ -294,6 +302,21 @@
             })();
           });
         }
+        function typeMark(ms) {
+          return new Promise(function (res) {
+            var i = 0;
+            (function tick() {
+              if (skipped) return res();
+              i += 1;
+              line.innerHTML = charSpec.slice(0, i).map(function (ch) {
+                var c = ch.c.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                return ch.cls ? '<span class="' + ch.cls + '">' + c + "</span>" : c;
+              }).join("");
+              if (i < charSpec.length) setTimeout(tick, jitter(ms));
+              else res();
+            })();
+          });
+        }
         function erase(ms) {
           return new Promise(function (res) {
             (function tick() {
@@ -314,10 +337,10 @@
           await wait(180);
           if (skipped) return finish();
           h1.classList.remove("term");                      // the title types in display face
-          await type(typeTitle, TYPE_MS);
+          await typeMark(TYPE_MS);
           await wait(220);
           if (skipped) return finish();
-          h1.innerHTML = original;                          // accent dot = final keystroke
+          h1.innerHTML = original;                          // identical rendering — no jump
           h1.removeAttribute("aria-label");
           h1.append(cursor);
           await wait(500);

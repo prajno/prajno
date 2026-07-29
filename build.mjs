@@ -62,11 +62,21 @@ function metaTags({ data, url, image }) {
   return tags.join('\n');
 }
 
+// The header wordmark. A title ending in a short lowercase suffix after a dot (PRAJNO.com)
+// splits into name + accent dot + case-preserved suffix; anything else keeps the plain
+// brand-dot treatment. Case comes straight from front matter.
+function brandMark(title) {
+  const m = String(title).match(/^(.*)\.([a-z0-9]{1,4})$/);
+  if (m) return `${escape(m[1])}<span class="dot">.</span><span class="tld">${escape(m[2])}</span>`;
+  return `${escape(title)}<span class="dot">.</span>`;
+}
+
 export function renderPage({ template, data, contentHtml, url, image, nav, rootPath = '' }) {
   // Function replacers throughout: a plain replacement STRING interprets $&, $`, $' — so
   // e.g. a $` inside a code fence would splice the whole template head into the article.
   return template
     .replace(/\{\{title\}\}/g, () => escape(data.title ?? 'Untitled'))
+    .replace('{{brand}}', () => brandMark(data.title ?? 'Untitled'))
     .replace('{{meta}}', () => metaTags({ data, url, image }))
     .replace('{{subtitle}}', () =>
       data.subtitle ? `<p class="subtitle">${escape(data.subtitle)}</p>` : '')

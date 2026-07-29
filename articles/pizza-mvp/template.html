@@ -488,11 +488,30 @@
       links.forEach(function (a) { a.removeAttribute("aria-current"); });
       map[id].setAttribute("aria-current", "true");
     };
+    var motionOK = !matchMedia("(prefers-reduced-motion: reduce)").matches;
     links.forEach(function (a) {
-      map[a.getAttribute("href").slice(1)] = a;
-      // Highlight on click too — an instant (reduced-motion) jump lands the heading at
-      // scroll-margin-top, which never transits the observer band.
-      a.addEventListener("click", function () { mark(a.getAttribute("href").slice(1)); });
+      var id = a.getAttribute("href").slice(1);
+      map[id] = a;
+      // Scroll THIS document ourselves instead of native fragment navigation: a native
+      // anchor jump inside a same-origin iframe also scrolls every ancestor page (the
+      // home page's accordion would drag the outer scrollbar). Manual scrollTo stays
+      // inside the frame. Also marks the link — an instant jump lands the heading at
+      // scroll-margin-top, which never transits the scrollspy band.
+      a.addEventListener("click", function (event) {
+        var target = document.getElementById(id);
+        if (!target) return; // fall back to native behavior
+        event.preventDefault();
+        var margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+        var top = target.getBoundingClientRect().top + window.scrollY - margin;
+        window.scrollTo({ top: top, behavior: motionOK ? "smooth" : "auto" });
+        // If the smooth scroll stalls (e.g. the click was forwarded into this iframe
+        // while the accordion was mid-expansion), land instantly instead of nowhere.
+        setTimeout(function () {
+          if (Math.abs(window.scrollY - top) > 8) window.scrollTo({ top: top, behavior: "auto" });
+        }, 700);
+        try { history.replaceState(null, "", "#" + id); } catch (e) {}
+        mark(id);
+      });
     });
     var spy = new IntersectionObserver(function (entries) {
       entries.forEach(function (en) {

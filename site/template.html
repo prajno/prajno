@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{title}}</title>
 {{meta}}
+<script>
+  // Arm the intro before first paint so nothing flashes: home page only (articles live
+  // under /articles/), JS present by definition, and never under reduced motion.
+  if (!/\/articles\//.test(location.pathname) &&
+      matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+    document.documentElement.classList.add("intro");
+    // Safety valve: if the typing sequence never boots (a script error, an ancient
+    // browser), un-hide the static page instead of leaving it blank.
+    setTimeout(function () {
+      var c = document.documentElement.classList;
+      if (!c.contains("boot")) c.remove("intro");
+    }, 1500);
+  }
+</script>
 <style>
   /* ————— prajno.com design system: "Drafting Room" ————————————————————————
      Deep-olive ground, chartreuse accent, condensed display caps over a grid of
@@ -151,31 +165,48 @@
     .ext-img img { height: 150px; }
   }
 
-  /* ————— load sequence: header centered + fade 300ms, slide up, articles from the right ————— */
+  /* ————— load sequence: a terminal cold-open —————
+     The head script arms html.intro (home page + motion OK + JS only) BEFORE first
+     paint. The body script then types "Welcome to my website…", blinks, deletes it,
+     types the title, and adds .pin — which slides the header up and cascades the
+     subtitle and articles. Any interaction skips straight to .pin. */
+  html.intro .site-header { transform: translateY(calc(50vh - 100%));
+                            border-color: transparent; background: transparent;
+                            backdrop-filter: none; }
+  html.intro .site-header .inner { opacity: 0; }      /* until the terminal line is prepared */
+  html.intro.boot .site-header .inner { opacity: 1; }
+  html.intro .subtitle { opacity: 0; }
+  html.intro .list-label, html.intro .acc { opacity: 0; visibility: hidden; }
+  html.intro.pin .list-label, html.intro.pin .acc { visibility: visible; }
+  .site-header { transition: transform 0.55s cubic-bezier(0.22, 0.9, 0.3, 1),
+                             background 0.3s, border-color 0.3s; }
+  .subtitle { transition: opacity 0.3s ease-out; }
+  html.intro.pin .site-header { transform: none; border-color: var(--hairline);
+                                background: color-mix(in srgb, var(--ground) 92%, transparent);
+                                backdrop-filter: blur(6px); }
+  html.intro.pin .subtitle { opacity: 1; transition-delay: 0.4s; }
+  html.intro.pin .list-label { animation: art-in 0.35s ease-out 0.5s forwards; }
+  html.intro.pin .acc:nth-of-type(1) { animation: art-in 0.35s ease-out 0.6s forwards; }
+  html.intro.pin .acc:nth-of-type(2) { animation: art-in 0.35s ease-out 0.75s forwards; }
+  html.intro.pin .acc:nth-of-type(3) { animation: art-in 0.35s ease-out 0.9s forwards; }
+  html.intro.pin .acc:nth-of-type(4) { animation: art-in 0.35s ease-out 1.05s forwards; }
+  html.intro.pin .acc:nth-of-type(n+5) { animation: art-in 0.35s ease-out 1.2s forwards; }
+  @keyframes art-in {
+    from { opacity: 0; transform: translateX(48px); }  /* fade 150ms into the slide */
+    43%  { opacity: 1; }
+    to   { opacity: 1; transform: none; }
+  }
   @media (prefers-reduced-motion: no-preference) {
-    html.js .site-header { animation: hero-in 1.15s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
-    @keyframes hero-in {
-      0%       { opacity: 0; transform: translateY(calc(50vh - 100%)); }
-      26%      { opacity: 1; transform: translateY(calc(50vh - 100%)); }  /* 300ms fade, centered */
-      56%      { opacity: 1; transform: translateY(calc(50vh - 100%)); }  /* hold a beat */
-      100%     { opacity: 1; transform: translateY(0); }                  /* slide up home */
-    }
-    html.js .acc, html.js .list-label {
-      opacity: 0; animation: art-in 0.35s ease-out forwards;
-    }
-    html.js .list-label { animation-delay: 1.05s; }
-    html.js .acc:nth-of-type(1) { animation-delay: 1.15s; }
-    html.js .acc:nth-of-type(2) { animation-delay: 1.3s; }
-    html.js .acc:nth-of-type(3) { animation-delay: 1.45s; }
-    html.js .acc:nth-of-type(4) { animation-delay: 1.6s; }
-    html.js .acc:nth-of-type(n+5) { animation-delay: 1.75s; }
-    @keyframes art-in {
-      from { opacity: 0; transform: translateX(48px); }  /* fade 150ms into the slide */
-      43%  { opacity: 1; }
-      to   { opacity: 1; transform: none; }
-    }
     .acc-panel, .acc-tilt, .acc-shield { will-change: transform, opacity; }
   }
+
+  /* the terminal line */
+  .site-header h1.term { font-family: var(--font-label); font-weight: 400;
+                         font-size: 24px; letter-spacing: 0.02em; text-transform: none; }
+  .type-cursor { display: inline-block; margin-left: 3px; color: var(--accent);
+                 font-family: var(--font-label); font-weight: 500;
+                 animation: cursor-blink 1.06s steps(1) infinite; }
+  @keyframes cursor-blink { 50% { opacity: 0; } }
 </style>
 </head>
 <body>
@@ -201,6 +232,101 @@
     var root = document.documentElement;
     var header = document.querySelector(".site-header");
     var motionOK = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* ——— terminal cold-open ——— */
+    if (root.classList.contains("intro")) {
+      (function () {
+        var TYPE_MS = 120;   // ~100 wpm
+        var DELETE_MS = 45;  // backspace is quicker than typing
+        var WELCOME = "Welcome to my website...";
+        var h1 = header.querySelector("h1");
+        var original = h1.innerHTML;
+        var finalText = h1.textContent.trim();              // e.g. "Prajno."
+        var typeTitle = finalText.replace(/\.$/, "");       // dot lands with the restore
+        var skipped = false;
+
+        var line = document.createElement("span");
+        var cursor = document.createElement("span");
+        cursor.className = "type-cursor";
+        cursor.textContent = "_";
+        line.setAttribute("aria-hidden", "true");
+        cursor.setAttribute("aria-hidden", "true");
+        h1.setAttribute("aria-label", finalText);           // readers get the real title
+        h1.classList.add("term");
+        h1.textContent = "";
+        h1.append(line, cursor);
+        root.classList.add("boot");
+
+        function finish() {
+          h1.classList.remove("term");
+          h1.innerHTML = original;
+          h1.removeAttribute("aria-label");
+          root.classList.add("pin");
+        }
+        // A visitor who clicks, types, or scrolls gets the finished page immediately.
+        ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) {
+          addEventListener(ev, function onSkip() {
+            skipped = true;
+            removeEventListener(ev, onSkip);
+          }, { once: true, passive: true });
+        });
+
+        function wait(ms) {
+          // Skip-aware: a visitor bailing during a hold shouldn't wait it out.
+          return new Promise(function (res) {
+            var t0 = Date.now();
+            (function tick() {
+              if (skipped || Date.now() - t0 >= ms) return res();
+              setTimeout(tick, 80);
+            })();
+          });
+        }
+        function jitter(ms) { return ms + Math.random() * 40 - 20; }
+        function type(text, ms) {
+          return new Promise(function (res) {
+            var i = 0;
+            (function tick() {
+              if (skipped) return res();
+              i += 1;
+              line.textContent = text.slice(0, i);
+              if (i < text.length) setTimeout(tick, jitter(ms));
+              else res();
+            })();
+          });
+        }
+        function erase(ms) {
+          return new Promise(function (res) {
+            (function tick() {
+              if (skipped) return res();
+              var text = line.textContent;
+              line.textContent = text.slice(0, -1);
+              if (line.textContent.length) setTimeout(tick, ms);
+              else res();
+            })();
+          });
+        }
+
+        (async function () {
+          await wait(350);
+          await type(WELCOME, TYPE_MS);
+          await wait(1000);                                 // let the cursor blink a beat
+          await erase(DELETE_MS);
+          await wait(180);
+          if (skipped) return finish();
+          h1.classList.remove("term");                      // the title types in display face
+          await type(typeTitle, TYPE_MS);
+          await wait(220);
+          if (skipped) return finish();
+          h1.innerHTML = original;                          // accent dot = final keystroke
+          h1.removeAttribute("aria-label");
+          h1.append(cursor);
+          await wait(500);
+          cursor.remove();
+          root.classList.add("pin");
+        })();
+      })();
+    }
+
     function measure() {
       root.style.setProperty("--header-h", header.offsetHeight + "px");
       accs.forEach(function (acc) {

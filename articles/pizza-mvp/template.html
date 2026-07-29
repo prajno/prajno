@@ -489,31 +489,49 @@
       map[id].setAttribute("aria-current", "true");
     };
     var motionOK = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // While a rail click drives the scroll, the observer stays quiet: headings transiting
+    // the band mid-glide must not steal the active state from the clicked link.
+    var spyLocked = false;
+    var unlockTimer;
+    function lockSpy() {
+      spyLocked = true;
+      clearTimeout(unlockTimer);
+      unlockTimer = setTimeout(function () { spyLocked = false; }, 1400);
+    }
+    addEventListener("scrollend", function () {
+      clearTimeout(unlockTimer);
+      spyLocked = false;
+    });
     links.forEach(function (a) {
       var id = a.getAttribute("href").slice(1);
       map[id] = a;
       // Scroll THIS document ourselves instead of native fragment navigation: a native
       // anchor jump inside a same-origin iframe also scrolls every ancestor page (the
       // home page's accordion would drag the outer scrollbar). Manual scrollTo stays
-      // inside the frame. Also marks the link — an instant jump lands the heading at
-      // scroll-margin-top, which never transits the scrollspy band.
+      // inside the frame.
       a.addEventListener("click", function (event) {
         var target = document.getElementById(id);
         if (!target) return; // fall back to native behavior
         event.preventDefault();
         var margin = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
         var top = target.getBoundingClientRect().top + window.scrollY - margin;
+        var startY = window.scrollY;
+        lockSpy();
         window.scrollTo({ top: top, behavior: motionOK ? "smooth" : "auto" });
-        // If the smooth scroll stalls (e.g. the click was forwarded into this iframe
-        // while the accordion was mid-expansion), land instantly instead of nowhere.
+        // Only if the glide never started (e.g. the click was forwarded into this iframe
+        // while the accordion was mid-expansion) land instantly — a long glide that is
+        // merely still in progress must not be yanked to the target.
         setTimeout(function () {
-          if (Math.abs(window.scrollY - top) > 8) window.scrollTo({ top: top, behavior: "auto" });
+          if (Math.abs(window.scrollY - startY) < 8 && Math.abs(window.scrollY - top) > 8) {
+            window.scrollTo({ top: top, behavior: "auto" });
+          }
         }, 700);
         try { history.replaceState(null, "", "#" + id); } catch (e) {}
         mark(id);
       });
     });
     var spy = new IntersectionObserver(function (entries) {
+      if (spyLocked) return;
       entries.forEach(function (en) {
         if (en.isIntersecting) mark(en.target.id);
       });

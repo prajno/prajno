@@ -82,6 +82,16 @@ the Medium-shaped draft of the case study) is source material the build ignores.
 articles may pre-render diagrams to SVG under `images/` — commit the SVG, keep the Mermaid
 source in the originating repo.
 
+**External articles** (e.g. a Medium post): add `external: <url>` to front matter, plus
+optional `source:` and `readtime:`. The body is the home-page card copy (an intro, a couple
+of paragraphs); `image:` is the card image. No local page is generated — the card links out
+in a new tab. `articles/angular-style-debt/` is one.
+
+The site's design system ("Drafting Room": deep olive, chartreuse accent, Big Shoulders
+Display / Archivo / IBM Plex Mono) lives in `site/template.html`; the fonts are self-hosted
+in `site/fonts/` (OFL, latin subsets) and copied to `dist/fonts/` by the build. Shared-shell
+pages reference them via the `{{root}}` token so paths stay relative at any depth.
+
 ## Architecture
 
 - `site/template.html` — the shared page shell and stylesheet: the home page and any

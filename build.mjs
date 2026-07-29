@@ -62,7 +62,7 @@ function metaTags({ data, url, image }) {
   return tags.join('\n');
 }
 
-export function renderPage({ template, data, contentHtml, url, image, nav }) {
+export function renderPage({ template, data, contentHtml, url, image, nav, rootPath = '' }) {
   // Function replacers throughout: a plain replacement STRING interprets $&, $`, $' — so
   // e.g. a $` inside a code fence would splice the whole template head into the article.
   return template
@@ -71,6 +71,9 @@ export function renderPage({ template, data, contentHtml, url, image, nav }) {
     .replace('{{subtitle}}', () =>
       data.subtitle ? `<p class="subtitle">${escape(data.subtitle)}</p>` : '')
     .replace('{{nav}}', () => nav ?? '')
+    // {{root}} makes shared-template asset URLs (fonts) depth-correct: '' on the home
+    // page, '../../' on article pages — relative either way, per the Pages-staging rule.
+    .replace(/\{\{root\}\}/g, () => rootPath)
     .replace('{{content}}', () => contentHtml);
 }
 
@@ -130,31 +133,72 @@ const formatDate = (date) =>
       })
     : '';
 
-// Each article renders as an accordion: a bar (toggle + permalink) over an iframe of the
-// article page. Collapsed shows a fixed-height peek; the home page's script handles
-// expand/collapse and forwards a collapsed click into the iframe.
+const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 5 16 12 9 19"/></svg>`;
+
+function articleMeta(data) {
+  return [
+    data.subtitle ? escape(data.subtitle) : '',
+    data.source ? escape(data.source) : '',
+    data.date ? `<time datetime="${escape(data.date)}">${formatDate(data.date)}</time>` : '',
+    data.readtime ? escape(data.readtime) : '',
+  ].filter(Boolean).join(' · ');
+}
+
+// Each local article renders as an accordion: a bar (chevron + toggle + open-in-new-window
+// link) over an iframe of the article page. Collapsed shows a tinted fixed-height peek;
+// the home page's script handles expand/collapse and forwards a collapsed click into the
+// iframe. An article with `external:` in front matter renders as a card that links out —
+// intro paragraphs + image, no expand/collapse.
 function articleList(articles) {
-  const items = articles.map(({ slug, data }) => {
-    const meta = [
-      data.subtitle ? escape(data.subtitle) : '',
-      data.date ? `<time datetime="${escape(data.date)}">${formatDate(data.date)}</time>` : '',
-    ].filter(Boolean).join(' · ');
+  const items = articles.map((article) => {
+    const { slug, data } = article;
+    if (data.external) {
+      const img = data.image
+        ? `\n        <div class="ext-img"><img src="articles/${encodeURIComponent(slug)}/${escape(data.image)}" alt=""></div>`
+        : '';
+      return `  <article class="acc ext" data-slug="${escape(slug)}">
+    <div class="acc-inner">
+      <a class="acc-link" href="${escape(data.external)}" target="_blank" rel="noopener">
+        <div class="acc-bar">
+          <span class="acc-toggle" role="presentation">
+            <span class="acc-title">${escape(data.title)}</span>
+            <span class="acc-meta">${articleMeta(data)}</span>
+          </span>
+          <span class="acc-open"><span class="tip">open in new window</span>↗</span>
+        </div>
+        <div class="acc-panel">
+          <div class="ext-body">
+            <div>
+${renderMarkdown(article.body)}
+              <p class="ext-more">Read on ${escape(data.source ?? 'the original site')} ↗</p>
+            </div>${img}
+          </div>
+          <div class="acc-shield" aria-hidden="true"></div>
+        </div>
+      </a>
+    </div>
+  </article>`;
+    }
     const href = `articles/${encodeURIComponent(slug)}/`;
     return `  <article class="acc" data-slug="${escape(slug)}">
-    <div class="acc-bar">
-      <button class="acc-toggle" type="button" aria-expanded="false">
-        <span class="acc-title">${escape(data.title)}</span>
-        <span class="acc-meta">${meta}</span>
-      </button>
-      <a class="acc-open" href="${href}" aria-label="Open ${escape(data.title)} as its own page">↗</a>
-    </div>
-    <div class="acc-panel">
-      <iframe src="${href}" title="${escape(data.title)}" loading="lazy" tabindex="-1"></iframe>
-      <div class="acc-shield" aria-hidden="true"><span>click to expand</span></div>
+    <div class="acc-inner">
+      <div class="acc-bar">
+        <button class="chev" type="button" aria-expanded="false" aria-label="Expand ${escape(data.title)}">${CHEVRON}</button>
+        <button class="acc-toggle" type="button" aria-expanded="false">
+          <span class="acc-title">${escape(data.title)}</span>
+          <span class="acc-meta">${articleMeta(data)}</span>
+        </button>
+        <a class="acc-open" href="${href}" target="_blank" rel="noopener" aria-label="Open ${escape(data.title)} in a new window"><span class="tip">open in new window</span>↗</a>
+      </div>
+      <div class="acc-panel">
+        <div class="acc-tilt"><iframe src="${href}" title="${escape(data.title)}" loading="lazy" tabindex="-1"></iframe></div>
+        <div class="acc-shield" aria-hidden="true"></div>
+      </div>
     </div>
   </article>`;
   });
-  return `<div class="articles">\n${items.join('\n')}\n</div>`;
+  const label = `  <div class="list-label">Writing · ${String(articles.length).padStart(2, '0')}</div>`;
+  return `<div class="articles">\n  <div class="inner">\n${label}\n${items.join('\n')}\n  </div>\n</div>`;
 }
 
 // The og:image for an article: an explicit `image:` in front matter wins, else the first
@@ -176,6 +220,10 @@ export async function build() {
   for (const article of articles) {
     const out = join(dist, 'articles', article.slug);
     await mkdir(out, { recursive: true });
+    await cp(join(article.dir, 'images'), join(out, 'images'), { recursive: true }).catch(() => {});
+    // An external article (e.g. a Medium post) is card-only: its images ship for the home
+    // page card, but no local page is generated — the card links out.
+    if (article.data.external) continue;
     // An article may ship its own template.html — its presentation then lives entirely in
     // that file and touches no other page (the pizza-mvp case study does this).
     const ownTemplate = await readFile(join(article.dir, 'template.html'), 'utf8').catch(() => null);
@@ -189,9 +237,9 @@ export async function build() {
         url: `${SITE_URL}/articles/${article.slug}/`,
         image: articleImage(article),
         nav: navHtml,
+        rootPath: '../../',
       }),
     );
-    await cp(join(article.dir, 'images'), join(out, 'images'), { recursive: true }).catch(() => {});
   }
 
   const home = parseFrontMatter(await readFile(join(siteDir, 'index.md'), 'utf8'));
@@ -205,6 +253,9 @@ export async function build() {
     join(dist, 'index.html'),
     renderPage({ template, data: home.data, contentHtml: homeHtml, url: `${SITE_URL}/` }),
   );
+
+  // Self-hosted fonts for the shared shell.
+  await cp(join(siteDir, 'fonts'), join(dist, 'fonts'), { recursive: true }).catch(() => {});
 
   // Backstop for the custom domain configured in Settings -> Pages.
   await writeFile(join(dist, 'CNAME'), `${DOMAIN}\n`);

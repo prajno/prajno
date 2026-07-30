@@ -11,6 +11,9 @@ is permanently readable by anyone.
 
 ## How we work
 
+- **Every PR has a tracking issue.** Before branching, open (or find) a GitHub issue that
+  captures the work: Context, Goal, Acceptance criteria, Out of scope. Link it from the PR
+  with `Closes #N`. The issue holds the requirements; the PR holds the change.
 - **No merges to `main` without a PR.** Branch, open a PR, merge the PR. Never commit or
   push directly to `main` — `main` is the live site, and a push to it deploys.
 - **View the site locally before merging.** Run `npm start` and actually look at every page
@@ -18,7 +21,7 @@ is permanently readable by anyone.
   GitHub Pages has no per-PR preview, so local is the only preview there is.
 - **If a task is underspecified or needs a decision, stop and ask** rather than guessing.
 
-## Before opening a PR — all four, every time
+## Before opening a PR — all five, every time
 
 1. **`npm run check` is green.** It builds the site, verifies the markdown is shaped the way
    the renderer expects, resolves every local link and image, and diffs each page's layout
@@ -43,6 +46,14 @@ is permanently readable by anyone.
    or code block appearing or disappearing — say so **explicitly in chat and in the PR
    description** before opening the PR. `npm run check` prints the structural diff for you.
    A layout change must never ride along unmentioned inside a "fix a typo" PR.
+
+5. **Check the responsive viewports.** With `npm start` running, use devtools device
+   emulation to view every page the PR touches at ~375px (phone), 640px, 768px (tablet),
+   and 1024px+ (desktop). Watch text wrapping, image scaling, and clipped horizontal
+   overflow — `body` has `overflow-x: hidden`, so overflow hides instead of scrolling;
+   probe with `overflow-x: visible` if in doubt. The shared shell's breakpoint convention
+   (Tailwind-style sm 640 / md 768, desktop-first `max-width` queries) lives in
+   `site/template.html` — use those widths, not ad-hoc ones.
 
 ## Writing an article
 
@@ -69,9 +80,11 @@ renders as a bare `<img>` with no caption — `npm run check` fails on this.
 ![alt text, which is required](images/host-lobby.png "The caption under the image.")
 ```
 
-**Keep image paths relative.** The site serves from `prajno.github.io/prajno/` until DNS for
-the custom domain lands, and from the root of `prajno.com` after. Relative paths are correct
-in both; an absolute `/images/…` breaks the first.
+**Keep image paths relative.** An article's images live in its own directory
+(`articles/<slug>/images/`), so only a relative `images/…` path resolves — on the article
+page and inside the home-page accordion iframe alike; an absolute `/images/…` points at a
+directory that doesn't exist. (The site serves from the root of `prajno.com`; the old
+`prajno.github.io/prajno/` address redirects there.)
 
 The home page is `site/index.md`. Its `{{articles}}` placeholder generates the article
 accordions from front matter, so **publishing a new article never means editing the home
@@ -99,6 +112,11 @@ pages reference them via the `{{root}}` token so paths stay relative at any dept
   listed article renders as a full-width panel with an iframe peek of the article page —
   a click expands it (collapsing the others) under the sticky site header, and the same
   click is forwarded into the iframe. Presentation changes for shared pages go here.
+  Responsive rules follow the viewport convention documented in the stylesheet:
+  desktop-base with `max-width` queries at Tailwind-aligned widths — 767px (below md,
+  structural) and 639px (below sm, compact phone spacing) — with display type fluid via
+  `clamp()`. Nothing changes above 768px; per-article templates may keep their own
+  scoped breakpoints (pizza-mvp uses 1080px).
 - **Per-article template override** — if `articles/<slug>/template.html` exists, that
   article is rendered with it instead of the shared shell, and its presentation (CSS/JS)
   lives entirely in that file, scoped to that page alone. The build fills `{{title}}`,

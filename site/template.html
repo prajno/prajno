@@ -69,7 +69,7 @@
   main { max-width: 700px; margin: 0 auto; padding: 0 20px; }
 
   h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.01em;
-       text-transform: uppercase; font-size: 30px; margin-top: 44px; }
+       text-transform: uppercase; font-size: clamp(24px, 7vw, 30px); margin-top: 44px; }
   a { color: var(--accent); }
   blockquote { border-left: 3px solid var(--accent-dim); margin-left: 0; padding-left: 20px;
                font-style: italic; color: var(--muted); }
@@ -80,6 +80,9 @@
                font-family: var(--font-label); }
   code { font-family: var(--font-label); font-size: 15px; background: var(--raised);
          border: 1px solid var(--hairline); padding: 1px 6px; border-radius: 4px; }
+  /* body clips horizontal overflow, so wide content must scroll inside its own box */
+  pre { overflow-x: auto; }
+  table { display: block; overflow-x: auto; }
 
   /* ————— pinned header ————— */
   .site-header { position: sticky; top: 0; z-index: 50;
@@ -89,7 +92,7 @@
                  border-bottom: 1px solid var(--hairline); }
   .site-header .inner { max-width: 1100px; margin: 0 auto; padding: 20px 32px 16px; }
   .site-header h1 { margin: 0; font-family: var(--font-display); font-weight: 700;
-                    font-size: 44px; line-height: 0.98; letter-spacing: 0.01em;
+                    font-size: clamp(32px, 9vw, 44px); line-height: 0.98; letter-spacing: 0.01em;
                     text-transform: uppercase; }
   .site-header h1 .dot, .site-header h1 + .subtitle b { color: var(--accent); }
   .site-header h1 .tld { text-transform: none; } /* the lowercase "com" survives the caps */
@@ -116,7 +119,7 @@
   .acc-toggle { flex: 1; text-align: left; background: none; border: 0; cursor: pointer;
                 padding: 4px 0; font: inherit; color: inherit; }
   .acc-title { display: block; font-family: var(--font-display); font-weight: 600;
-               font-size: 27px; line-height: 1.08; letter-spacing: 0.01em;
+               font-size: clamp(21px, 5.6vw, 27px); line-height: 1.08; letter-spacing: 0.01em;
                text-transform: uppercase; }
   .acc-toggle:hover .acc-title, .ext .acc-link:hover .acc-title { color: var(--accent); }
   .acc-meta { display: block; color: var(--muted); font-size: 14.5px; margin-top: 5px; }
@@ -128,6 +131,8 @@
                    transition: opacity 0.18s, transform 0.18s; white-space: nowrap; }
   .acc-open:hover .tip, .acc-open:focus-visible .tip { opacity: 1; transform: none; }
   .acc-open:hover, .acc-open:focus-visible { color: var(--accent); }
+  /* The hidden tip still occupies flex space; drop it where it can't reveal or fit. */
+  @media (hover: none), (max-width: 639px) { .acc-open .tip { display: none; } }
 
   /* panel: iframe peek behind a tint, hinged open a few degrees on hover */
   .acc-panel { position: relative; height: 380px; overflow: hidden;
@@ -161,9 +166,25 @@
   .ext-img img { width: 100%; height: 210px; object-fit: cover; display: block; border-radius: 0; }
   .ext .acc-shield { cursor: inherit; }
   .ext .acc-link:hover .acc-shield { opacity: 0; }
-  @media (max-width: 720px) {
-    .ext-body { grid-template-columns: 1fr; }
+  /* ————— viewport convention: Tailwind-aligned, desktop-base, max-width direction.
+     below md (767px) — structural changes; below sm (639px) — compact phone spacing.
+     Display type is fluid via clamp() and never steps at a breakpoint. lg/xl need no
+     rules (main caps at 700px). Don't invent new widths here; a per-article template
+     may carry its own scoped breakpoints. ————— */
+  @media (max-width: 767px) {
+    .ext-body { grid-template-columns: 1fr; gap: 18px; padding: 18px 18px 20px; }
     .ext-img img { height: 150px; }
+  }
+  @media (max-width: 639px) {
+    .site-header .inner { padding: 14px 20px 12px; }
+    .site-header .subtitle { font-size: 15px; }
+    main { padding: 0 16px; }
+    .articles .inner { padding: 0 12px; }
+    .acc { margin: 16px 0; }
+    .acc-bar { padding: 12px 14px; gap: 10px; }
+    .acc-meta { font-size: 13.5px; margin-top: 3px; }
+    .acc-open { padding: 8px 10px; }  /* bigger tap target now the tip is gone */
+    .acc-panel { height: min(380px, 45vh); height: min(380px, 45dvh); }
   }
 
   /* ————— load sequence: a terminal cold-open —————
@@ -203,7 +224,7 @@
 
   /* the terminal line */
   .site-header h1.term { font-family: var(--font-label); font-weight: 400;
-                         font-size: 24px; letter-spacing: 0.02em; text-transform: none; }
+                         font-size: clamp(15px, 5vw, 24px); letter-spacing: 0.02em; text-transform: none; }
   .type-cursor { display: inline-block; margin-left: 3px; color: var(--accent);
                  font-family: var(--font-label); font-weight: 500;
                  animation: cursor-blink 1.06s steps(1) infinite; }

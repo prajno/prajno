@@ -539,5 +539,13 @@
     document.querySelectorAll("main h2[id]").forEach(function (h) { spy.observe(h); });
   })();
 </script>
+
+<script>
+  /* GoatCounter (#3): don't count a pageview when this article is only peeking inside
+     the home-page accordion iframe — count real, top-level visits. */
+  if (window.self !== window.top) window.goatcounter = { no_onload: true };
+</script>
+<script data-goatcounter="https://prajno.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

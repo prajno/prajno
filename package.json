@@ -1,0 +1,13 @@
+{
+  "name": "prajno",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node serve.mjs",
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "marked": "^16.0.0"
+  }
+}

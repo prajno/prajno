@@ -1,0 +1,43 @@
+
+> pizza@0.1.0 smoke
+> bash scripts/smoke.sh
+
+==> booting dist/main.js on :8099
+[gateway] listening on http://localhost:8099 (client + ws)
+[gateway] host screen: http://localhost:8099/host/ · players join at http://localhost:8099/player/
+==> running the bot against ws://localhost:8099
+
+> pizza@0.1.0 bot
+> tsx src/games/trivia/bot.ts --url ws://localhost:8099 --players 3 --reconnect
+
+[gateway] open 39082a9f-01f9-4c0d-9f32-0f0247323a69 (1 live)
+[bot] self-hosting room QXMM
+[gateway] open 45549a91-7b20-48a6-90c9-a385940dc775 (2 live)
+[gateway] open cbdf393b-74a5-466b-9e48-e4df3b78bb93 (3 live)
+[gateway] open 7d3aee2d-7706-48d2-9778-06180b79ce39 (4 live)
+[bot] 3 player(s) joined: Ada, Bex, Cy
+[bot] game started
+[bot] Ada (seat d48d1795-00b8-4a8e-bdfd-0d2a2aea0628) dropping to test rejoin (score 0)…
+[gateway] close 45549a91-7b20-48a6-90c9-a385940dc775 (3 live)
+[gateway] open 5812c8cf-78c2-420e-95dc-1a89f96bab9b (4 live)
+[bot] Ada kept seat d48d1795-00b8-4a8e-bdfd-0d2a2aea0628 and score (0 → 0)
+
+──────── bot run summary ────────
+room QXMM · 3 round(s) · 3 player(s)
+  #1  Bex    1 pt
+  #2  Ada    0 pt
+  #2  Cy     0 pt
+  Ada: answered 2, correct 0
+  Bex: answered 3, correct 1
+  Cy: answered 3, correct 0
+rejoin: PASS — Ada kept seat d48d1795-00b8-4a8e-bdfd-0d2a2aea0628 and score (0 → 0)
+answer secrecy (ADR-0001): PASS — no answer seen before the reveal
+overall: PASS ✅
+─────────────────────────────────
+
+[gateway] close 7d3aee2d-7706-48d2-9778-06180b79ce39 (3 live)
+[gateway] close 39082a9f-01f9-4c0d-9f32-0f0247323a69 (2 live)
+[gateway] close 5812c8cf-78c2-420e-95dc-1a89f96bab9b (1 live)
+[gateway] close cbdf393b-74a5-466b-9e48-e4df3b78bb93 (0 live)
+
+[server] SIGTERM received — shutting down

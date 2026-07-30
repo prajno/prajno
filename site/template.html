@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+{{meta}}
+<script>
+  // Arm the intro before first paint so nothing flashes: home page only (articles live
+  // under /articles/), JS present by definition, and never under reduced motion.
+  if (!/\/articles\//.test(location.pathname) &&
+      matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+    document.documentElement.classList.add("intro");
+    // Safety valve: if the typing sequence never boots (a script error, an ancient
+    // browser), un-hide the static page instead of leaving it blank.
+    setTimeout(function () {
+      var c = document.documentElement.classList;
+      if (!c.contains("boot")) c.remove("intro");
+    }, 1500);
+  }
+</script>
+<style>
+  /* ————— prajno.com design system: "Drafting Room" ————————————————————————
+     Deep-olive ground, chartreuse accent, condensed display caps over a grid of
+     hairlines. Single theme, deliberately. Fonts are self-hosted (site/fonts). */
+  @font-face {
+    font-family: "Big Shoulders Display";
+    src: url("{{root}}fonts/big-shoulders-display-var.woff2") format("woff2");
+    font-weight: 100 900; font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: "Archivo";
+    src: url("{{root}}fonts/archivo-var.woff2") format("woff2");
+    font-weight: 100 900; font-display: swap;
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  }
+  @font-face {
+    font-family: "IBM Plex Mono";
+    src: url("{{root}}fonts/ibm-plex-mono-400.woff2") format("woff2");
+    font-weight: 400; font-display: swap;
+  }
+  @font-face {
+    font-family: "IBM Plex Mono";
+    src: url("{{root}}fonts/ibm-plex-mono-500.woff2") format("woff2");
+    font-weight: 500; font-display: swap;
+  }
+
+  :root {
+    --ground: #171a12;
+    --surface: #1e2316;
+    --raised: #262c1c;
+    --hairline: #39412a;
+    --text: #e9e7da;
+    --muted: #a2a68c;
+    --accent: #bcd36c;
+    --accent-dim: #74814d;
+    --tint: rgb(12 14 8 / 0.7);
+    --font-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --font-body: "Archivo", -apple-system, "Segoe UI", sans-serif;
+    --font-label: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --radius: 2px;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0 0 60px; background: var(--ground); color: var(--text);
+         font-family: var(--font-body); font-size: 17px; line-height: 1.65;
+         overflow-x: hidden; }
+  main { max-width: 700px; margin: 0 auto; padding: 0 20px; }
+
+  h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: 0.01em;
+       text-transform: uppercase; font-size: 30px; margin-top: 44px; }
+  a { color: var(--accent); }
+  blockquote { border-left: 3px solid var(--accent-dim); margin-left: 0; padding-left: 20px;
+               font-style: italic; color: var(--muted); }
+  blockquote p { margin: 0; }
+  figure { margin: 32px 0; }
+  img { max-width: 100%; border-radius: var(--radius); }
+  figcaption { font-size: 13.5px; color: var(--muted); text-align: center; margin-top: 8px;
+               font-family: var(--font-label); }
+  code { font-family: var(--font-label); font-size: 15px; background: var(--raised);
+         border: 1px solid var(--hairline); padding: 1px 6px; border-radius: 4px; }
+
+  /* ————— pinned header ————— */
+  .site-header { position: sticky; top: 0; z-index: 50;
+                 width: 100vw; margin-left: calc(50% - 50vw);
+                 background: color-mix(in srgb, var(--ground) 92%, transparent);
+                 backdrop-filter: blur(6px);
+                 border-bottom: 1px solid var(--hairline); }
+  .site-header .inner { max-width: 1100px; margin: 0 auto; padding: 20px 32px 16px; }
+  .site-header h1 { margin: 0; font-family: var(--font-display); font-weight: 700;
+                    font-size: 44px; line-height: 0.98; letter-spacing: 0.01em;
+                    text-transform: uppercase; }
+  .site-header h1 .dot, .site-header h1 + .subtitle b { color: var(--accent); }
+  .site-header h1 .tld { text-transform: none; } /* the lowercase "com" survives the caps */
+  .site-header .subtitle { margin: 4px 0 0; color: var(--muted); font-size: 16.5px; }
+
+  /* ————— article accordions ————— */
+  /* Accordions run the full viewport width — only the pinned header is exempt. */
+  .articles { width: 100vw; margin-left: calc(50% - 50vw); }
+  .articles .inner { padding: 0 16px; }
+  .list-label { display: flex; align-items: center; gap: 14px; margin: 30px 0 0;
+                font-family: var(--font-label); font-size: 12px; letter-spacing: 0.22em;
+                text-transform: uppercase; color: var(--accent); }
+  .list-label::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+
+  .acc { margin: 22px 0; }
+  .acc-inner { border: 1px solid var(--hairline); border-radius: var(--radius);
+               overflow: hidden; background: var(--surface); }
+  .acc-bar { display: flex; align-items: center; gap: 16px; padding: 16px 22px; }
+  .chev { flex: none; width: 20px; height: 20px; color: var(--accent);
+          background: none; border: 0; padding: 0; cursor: pointer; }
+  .chev svg { display: block; width: 100%; height: 100%;
+              transition: transform 0.22s ease; }
+  .acc.open .chev svg { transform: rotate(90deg); }
+  .acc-toggle { flex: 1; text-align: left; background: none; border: 0; cursor: pointer;
+                padding: 4px 0; font: inherit; color: inherit; }
+  .acc-title { display: block; font-family: var(--font-display); font-weight: 600;
+               font-size: 27px; line-height: 1.08; letter-spacing: 0.01em;
+               text-transform: uppercase; }
+  .acc-toggle:hover .acc-title, .ext .acc-link:hover .acc-title { color: var(--accent); }
+  .acc-meta { display: block; color: var(--muted); font-size: 14.5px; margin-top: 5px; }
+  .acc-open { display: flex; align-items: center; gap: 8px; text-decoration: none;
+              color: var(--text); font-size: 19px; padding: 6px 4px; border-radius: 6px; }
+  .acc-open .tip { font-family: var(--font-label); font-size: 12px; letter-spacing: 0.04em;
+                   color: var(--muted); border: 1px solid var(--hairline); background: var(--raised);
+                   border-radius: 999px; padding: 4px 12px; opacity: 0; transform: translateX(6px);
+                   transition: opacity 0.18s, transform 0.18s; white-space: nowrap; }
+  .acc-open:hover .tip, .acc-open:focus-visible .tip { opacity: 1; transform: none; }
+  .acc-open:hover, .acc-open:focus-visible { color: var(--accent); }
+
+  /* panel: iframe peek behind a tint, hinged open a few degrees on hover */
+  .acc-panel { position: relative; height: 380px; overflow: hidden;
+               border-top: 1px solid var(--hairline);
+               transition: height 0.35s ease; perspective: 900px; }
+  .acc.open .acc-panel { height: calc(100vh - var(--header-h, 92px) - var(--bar-h, 78px));
+                         height: calc(100dvh - var(--header-h, 92px) - var(--bar-h, 78px)); }
+  .acc-tilt { position: absolute; inset: 0; transition: transform 0.25s ease;
+              transform-origin: top center; }
+  .acc-panel iframe { display: block; width: 100%; height: 100%; border: 0; background: #141021; }
+  .acc-shield { position: absolute; inset: 0; cursor: pointer; background: var(--tint);
+                transition: opacity 0.25s ease; }
+  html:not(.js) .acc-shield { display: none; }
+  .acc:not(.open):hover .acc-shield { opacity: 0; }
+  .acc:not(.open):hover .acc-tilt { transform: rotateX(-4deg); }
+  .acc.open .acc-shield { display: none; }
+  .acc.open .acc-tilt { transform: none; }
+
+  /* external card variant (e.g. Medium): no expand/collapse — the whole card links out */
+  .ext .acc-link { display: block; color: inherit; text-decoration: none; }
+  .ext .acc-bar { padding-right: 22px; }
+  .ext .acc-panel { height: auto; perspective: none; }
+  .ext-body { position: relative; display: grid; grid-template-columns: 1.5fr 1fr; gap: 26px;
+              padding: 22px 26px 24px; }
+  .ext-body p { margin: 0 0 14px; max-width: 60ch; font-size: 15.5px; }
+  .ext-body p:last-of-type { margin-bottom: 10px; }
+  .ext-more { font-family: var(--font-label); font-size: 12.5px; letter-spacing: 0.06em;
+              color: var(--accent); }
+  .ext-img { align-self: start; border: 1px solid var(--hairline); border-radius: var(--radius);
+             overflow: hidden; }
+  .ext-img img { width: 100%; height: 210px; object-fit: cover; display: block; border-radius: 0; }
+  .ext .acc-shield { cursor: inherit; }
+  .ext .acc-link:hover .acc-shield { opacity: 0; }
+  @media (max-width: 720px) {
+    .ext-body { grid-template-columns: 1fr; }
+    .ext-img img { height: 150px; }
+  }
+
+  /* ————— load sequence: a terminal cold-open —————
+     The head script arms html.intro (home page + motion OK + JS only) BEFORE first
+     paint. The body script then types "Welcome to my website…", blinks, deletes it,
+     types the title, and adds .pin — which slides the header up and cascades the
+     subtitle and articles. Any interaction skips straight to .pin. */
+  html.intro .site-header { transform: translateY(calc(50vh - 100%));
+                            border-color: transparent; background: transparent;
+                            backdrop-filter: none; }
+  html.intro .site-header .inner { opacity: 0; }      /* until the terminal line is prepared */
+  html.intro.boot .site-header .inner { opacity: 1; }
+  html.intro .subtitle { opacity: 0; }
+  html.intro .list-label, html.intro .acc { opacity: 0; visibility: hidden; }
+  html.intro.pin .list-label, html.intro.pin .acc { visibility: visible; }
+  .site-header { transition: transform 0.55s cubic-bezier(0.22, 0.9, 0.3, 1),
+                             background 0.3s, border-color 0.3s; }
+  .subtitle { transition: opacity 0.3s ease-out; }
+  html.intro.pin .site-header { transform: none; border-color: var(--hairline);
+                                background: color-mix(in srgb, var(--ground) 92%, transparent);
+                                backdrop-filter: blur(6px); }
+  html.intro.pin .subtitle { opacity: 1; transition-delay: 0.4s; }
+  html.intro.pin .list-label { animation: art-in 0.35s ease-out 0.5s forwards; }
+  html.intro.pin .acc:nth-of-type(1) { animation: art-in 0.35s ease-out 0.6s forwards; }
+  html.intro.pin .acc:nth-of-type(2) { animation: art-in 0.35s ease-out 0.75s forwards; }
+  html.intro.pin .acc:nth-of-type(3) { animation: art-in 0.35s ease-out 0.9s forwards; }
+  html.intro.pin .acc:nth-of-type(4) { animation: art-in 0.35s ease-out 1.05s forwards; }
+  html.intro.pin .acc:nth-of-type(n+5) { animation: art-in 0.35s ease-out 1.2s forwards; }
+  @keyframes art-in {
+    from { opacity: 0; transform: translateX(48px); }  /* fade 150ms into the slide */
+    43%  { opacity: 1; }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .acc-panel, .acc-tilt, .acc-shield { will-change: transform, opacity; }
+  }
+
+  /* the terminal line */
+  .site-header h1.term { font-family: var(--font-label); font-weight: 400;
+                         font-size: 24px; letter-spacing: 0.02em; text-transform: none; }
+  .type-cursor { display: inline-block; margin-left: 3px; color: var(--accent);
+                 font-family: var(--font-label); font-weight: 500;
+                 animation: cursor-blink 1.06s steps(1) infinite; }
+  @keyframes cursor-blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <h1>{{brand}}</h1>
+    {{subtitle}}
+  </div>
+</header>
+
+<main>
+{{content}}
+</main>
+
+<script>
+  (function () {
+    "use strict";
+    document.documentElement.classList.add("js");
+    var accs = Array.prototype.slice.call(document.querySelectorAll(".acc:not(.ext)"));
+    if (!accs.length && !document.querySelector(".acc")) return;
+
+    var root = document.documentElement;
+    var header = document.querySelector(".site-header");
+    var motionOK = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* ——— terminal cold-open ——— */
+    if (root.classList.contains("intro")) {
+      (function () {
+        var TYPE_MS = 120;   // ~100 wpm
+        var DELETE_MS = 45;  // backspace is quicker than typing
+        var WELCOME = "Welcome to my website...";
+        var h1 = header.querySelector("h1");
+        var original = h1.innerHTML;
+        var finalText = h1.textContent.trim();              // e.g. "PRAJNO.com"
+        // Each character of the wordmark, tagged with the class of the span it lives in
+        // (accent dot, lowercase tld) — so the title types out already wearing its styling.
+        var charSpec = [];
+        Array.prototype.forEach.call(h1.childNodes, function (node) {
+          var cls = node.nodeType === 1 ? node.className : null;
+          var text = node.textContent;
+          for (var i = 0; i < text.length; i += 1) charSpec.push({ c: text[i], cls: cls });
+        });
+        var skipped = false;
+
+        var line = document.createElement("span");
+        var cursor = document.createElement("span");
+        cursor.className = "type-cursor";
+        cursor.textContent = "_";
+        line.setAttribute("aria-hidden", "true");
+        cursor.setAttribute("aria-hidden", "true");
+        h1.setAttribute("aria-label", finalText);           // readers get the real title
+        h1.classList.add("term");
+        h1.textContent = "";
+        h1.append(line, cursor);
+        root.classList.add("boot");
+
+        function finish() {
+          h1.classList.remove("term");
+          h1.innerHTML = original;
+          h1.removeAttribute("aria-label");
+          root.classList.add("pin");
+        }
+        // A visitor who clicks, types, or scrolls gets the finished page immediately.
+        ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) {
+          addEventListener(ev, function onSkip() {
+            skipped = true;
+            removeEventListener(ev, onSkip);
+          }, { once: true, passive: true });
+        });
+
+        function wait(ms) {
+          // Skip-aware: a visitor bailing during a hold shouldn't wait it out.
+          return new Promise(function (res) {
+            var t0 = Date.now();
+            (function tick() {
+              if (skipped || Date.now() - t0 >= ms) return res();
+              setTimeout(tick, 80);
+            })();
+          });
+        }
+        function jitter(ms) { return ms + Math.random() * 40 - 20; }
+        function type(text, ms) {
+          return new Promise(function (res) {
+            var i = 0;
+            (function tick() {
+              if (skipped) return res();
+              i += 1;
+              line.textContent = text.slice(0, i);
+              if (i < text.length) setTimeout(tick, jitter(ms));
+              else res();
+            })();
+          });
+        }
+        function typeMark(ms) {
+          return new Promise(function (res) {
+            var i = 0;
+            (function tick() {
+              if (skipped) return res();
+              i += 1;
+              line.innerHTML = charSpec.slice(0, i).map(function (ch) {
+                var c = ch.c.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                return ch.cls ? '<span class="' + ch.cls + '">' + c + "</span>" : c;
+              }).join("");
+              if (i < charSpec.length) setTimeout(tick, jitter(ms));
+              else res();
+            })();
+          });
+        }
+        function erase(ms) {
+          return new Promise(function (res) {
+            (function tick() {
+              if (skipped) return res();
+              var text = line.textContent;
+              line.textContent = text.slice(0, -1);
+              if (line.textContent.length) setTimeout(tick, ms);
+              else res();
+            })();
+          });
+        }
+
+        (async function () {
+          await wait(350);
+          await type(WELCOME, TYPE_MS);
+          await wait(1000);                                 // let the cursor blink a beat
+          await erase(DELETE_MS);
+          await wait(180);
+          if (skipped) return finish();
+          h1.classList.remove("term");                      // the title types in display face
+          await typeMark(TYPE_MS);
+          await wait(220);
+          if (skipped) return finish();
+          h1.innerHTML = original;                          // identical rendering — no jump
+          h1.removeAttribute("aria-label");
+          h1.append(cursor);
+          await wait(500);
+          cursor.remove();
+          root.classList.add("pin");
+        })();
+      })();
+    }
+
+    function measure() {
+      root.style.setProperty("--header-h", header.offsetHeight + "px");
+      accs.forEach(function (acc) {
+        acc.style.setProperty("--bar-h", acc.querySelector(".acc-bar").offsetHeight + "px");
+      });
+    }
+    measure();
+    addEventListener("resize", measure);
+
+    function setOpen(acc, open) {
+      acc.classList.toggle("open", open);
+      acc.querySelectorAll(".acc-toggle, .chev").forEach(function (b) {
+        b.setAttribute("aria-expanded", String(open));
+      });
+      // A collapsed peek shouldn't be tabbable underneath the shield.
+      acc.querySelector("iframe").tabIndex = open ? 0 : -1;
+    }
+    function collapseAll() {
+      accs.forEach(function (a) { setOpen(a, false); });
+    }
+    // One expanded at a time: expanding an accordion collapses the others, then pins its
+    // bar just under the sticky header so the panel takes over the rest of the viewport.
+    function expand(acc) {
+      accs.forEach(function (a) { setOpen(a, a === acc); });
+      function align(behavior) {
+        if (!acc.classList.contains("open")) return; // collapsed again before we settled
+        var y = acc.getBoundingClientRect().top + window.scrollY - header.offsetHeight;
+        window.scrollTo({ top: y, behavior: behavior });
+      }
+      requestAnimationFrame(function () { align(motionOK ? "smooth" : "auto"); });
+      // Panels above may still be collapsing while we scroll; settle once they're done.
+      setTimeout(function () { align("auto"); }, 420);
+    }
+
+    // True if the hit element sits in fixed-position chrome (e.g. the article's floating
+    // theme button) — forwarding a "please expand" click into those would flip state the
+    // reader never asked for.
+    function inFixedChrome(el, win) {
+      for (var node = el; node && node.nodeType === 1; node = node.parentElement) {
+        if (win.getComputedStyle(node).position === "fixed") return true;
+      }
+      return false;
+    }
+
+    accs.forEach(function (acc) {
+      var iframe = acc.querySelector("iframe");
+      iframe.tabIndex = -1;
+      // Esc must also work when focus is INSIDE the article iframe.
+      iframe.addEventListener("load", function () {
+        try {
+          iframe.contentWindow.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") collapseAll();
+          });
+        } catch (e) { /* cross-origin — parent listener still covers the rest */ }
+      });
+      function toggle() {
+        if (acc.classList.contains("open")) setOpen(acc, false);
+        else expand(acc);
+      }
+      acc.querySelector(".acc-toggle").addEventListener("click", toggle);
+      acc.querySelector(".chev").addEventListener("click", toggle);
+      // Collapsed, the shield catches the click: expand FIRST, then forward the same
+      // click into the iframe (same-origin) so e.g. a tap on the article's rail nav
+      // still lands where the reader aimed.
+      acc.querySelector(".acc-shield").addEventListener("click", function (event) {
+        var rect = iframe.getBoundingClientRect();
+        var x = event.clientX - rect.left;
+        var y = event.clientY - rect.top;
+        expand(acc);
+        try {
+          var doc = iframe.contentDocument;
+          var el = doc && doc.elementFromPoint(x, y);
+          if (el && !inFixedChrome(el, iframe.contentWindow)) el.click();
+        } catch (e) { /* cross-origin or not yet loaded — expanding is enough */ }
+      });
+    });
+
+    addEventListener("keydown", function (event) {
+      if (event.key === "Escape") collapseAll();
+    });
+  })();
+</script>
+</body>
+</html>

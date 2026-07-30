@@ -259,10 +259,16 @@ export async function build() {
     /<p>\{\{articles\}\}<\/p>|\{\{articles\}\}/,
     () => articleList(articles), // function replacer — see renderPage
   );
+  // Front-matter image (site-root relative) -> the home page's og:image share card.
+  const homeImage = home.data.image ? `${SITE_URL}/${home.data.image.replace(/^\//, '')}` : undefined;
   await writeFile(
     join(dist, 'index.html'),
-    renderPage({ template, data: home.data, contentHtml: homeHtml, url: `${SITE_URL}/` }),
+    renderPage({ template, data: home.data, contentHtml: homeHtml, url: `${SITE_URL}/`, image: homeImage }),
   );
+  // Static site assets referenced by the home page (the og card).
+  if (home.data.image) {
+    await cp(join(siteDir, home.data.image), join(dist, home.data.image)).catch(() => {});
+  }
 
   // Self-hosted fonts for the shared shell.
   await cp(join(siteDir, 'fonts'), join(dist, 'fonts'), { recursive: true }).catch(() => {});

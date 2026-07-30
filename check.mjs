@@ -110,6 +110,15 @@ if (!home.body.includes('{{articles}}')) {
   fail('site/index.md', 'the {{articles}} placeholder is gone, so the home page lists nothing');
 }
 if (!home.data.title) fail('site/index.md', 'front matter is missing `title`');
+// Same guard the articles get: the og:image lives in a meta tag the link pass can't see.
+if (home.data.image) {
+  if (/^(https?:)?\/\//.test(home.data.image) || home.data.image.startsWith('/')) {
+    fail('site/index.md', `front matter image "${home.data.image}" must be relative to site/`);
+  } else {
+    await access(join(siteDir, home.data.image)).catch(() =>
+      fail('site/index.md', `front matter image "${home.data.image}" resolves to nothing`));
+  }
+}
 
 const template = await readFile(join(siteDir, 'template.html'), 'utf8');
 for (const slot of ['{{title}}', '{{meta}}', '{{subtitle}}', '{{content}}']) {

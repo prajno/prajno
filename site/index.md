@@ -1,6 +1,6 @@
 ---
 title: PRAJNO.com
-subtitle: Notes on building software, design, AI and other interesting stuff.
+subtitle: Notes on software, design, and building with AI.
 description: Writing about software engineering, AI-agent development, and shipping side projects.
 ---
 

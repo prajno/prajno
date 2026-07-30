@@ -174,6 +174,10 @@ if (external.size === 0) {
   for (const url of external) {
     const response = await fetch(url, { method: 'HEAD', redirect: 'follow' }).catch(() => null);
     if (response?.ok) ok(`${url} -> ${response.status}`);
+    // Bot-blocking hosts (Medium, Cloudflare-fronted sites) 403 every non-browser fetch.
+    // A permanent red would train ignoring this gate — warn, and leave the manual read
+    // (the CLAUDE.md step) as the real check.
+    else if (response?.status === 403) info(`${url} -> 403 (bot-blocked — open it in a browser yourself)`);
     else fail('external', `${url} -> ${response ? response.status : 'unreachable'}`);
   }
 } else {

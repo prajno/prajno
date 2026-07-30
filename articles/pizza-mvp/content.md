@@ -2,7 +2,7 @@
 title: "Spec first, ship fast: building Pizza with Claude Code"
 subtitle: Fourteen days from an empty repo to a deployed MVP — the build log of a spec-first, AI-paired side project.
 date: 2026-07-27
-description: A case study in agentic development — thirteen ADRs before the code, specs that read like tests, a bot for QA, and a one-click deploy.
+description: A case study in agentic development — nine ADRs before any code, specs that read like tests, a bot for QA, and a one-click deploy.
 image: images/host-round-mockup.png
 ---
 
@@ -193,7 +193,7 @@ The sequence below is reconstructed from the merge history — and the order is 
   <div class="tl tl-test">
     <div class="d">Jul 13 · day 5</div>
     <h3>Review waves</h3>
-    <p>A multi-agent architecture review lands as two PRs: a same-day hardening pass (two latent bugs, including a process-killing timer exception) and a four-commit batch — tests → flake fix → god-object decomposition → read validation — "so the refactor lands on a hardened, non-flaky suite."</p>
+    <p>A multi-agent architecture review lands as two PRs: a same-day hardening pass (two latent bugs, including a process-killing timer exception) and a four-commit batch — tests → flake fix → god-object decomposition → read validation.</p>
   </div>
   <div class="tl">
     <div class="d">Jul 14 · day 6</div>
@@ -203,7 +203,7 @@ The sequence below is reconstructed from the merge history — and the order is 
   <div class="tl tl-doc">
     <div class="d">Jul 15–16 · days 7–8</div>
     <h3>Design before build, then the clients</h3>
-    <p>WS transport with reconnect; then the UI spec + standalone HTML mockups merge at 20:02 — and the host screen implementation follows at 22:56, the player phone the next morning. Design beat code to main by three hours.</p>
+    <p>WS transport with reconnect; then the UI spec + standalone HTML mockups merge at 20:02 — and the host screen implementation follows at 22:56, the player phone just after midnight. Design beat code to main by three hours.</p>
   </div>
   <div class="tl tl-test">
     <div class="d">Jul 16–17 · days 8–9</div>
@@ -213,7 +213,7 @@ The sequence below is reconstructed from the merge history — and the order is 
   <div class="tl tl-ship">
     <div class="d">Jul 20–21 · days 12–13</div>
     <h3>Ship it</h3>
-    <p>VPS demo deploy: Caddy auto-HTTPS, Basic Auth on the host page, a HOST_SECRET token gating <code>createRoom</code> over the socket (ADR-0012). A pre-merge adversarial review found 7 issues including a blocker that would have failed every deploy.</p>
+    <p>VPS demo deploy: Caddy auto-HTTPS, Basic Auth on the host page, a HOST_SECRET token gating <code>createRoom</code> over the socket (ADR-0012). A pre-merge adversarial review found seven issues, including a blocker that would have failed every deploy.</p>
   </div>
   <div class="tl tl-ship">
     <div class="d">Jul 23 · two weeks to the day</div>
@@ -259,7 +259,7 @@ Every feature is one GitHub issue with the same five-part shape — and the shap
   <div class="ihead">
     <span class="inum">#8</span>
     <span class="ititle">Round engine + GameModule seam: serve wire payload, collect, MC-score, advance</span>
-    <span class="ilabel">feat</span><span class="ilabel">area: platform</span><span class="ilabel">milestone: v0.1</span>
+    <span class="ilabel">feat</span><span class="ilabel">area: server</span><span class="ilabel">milestone: v0.1</span>
   </div>
   <dl>
     <dt>Acceptance criteria <span style="text-transform:none;letter-spacing:0">(abridged)</span></dt>
@@ -277,11 +277,11 @@ Every feature is one GitHub issue with the same five-part shape — and the shap
 <div class="cardgrid cards3">
   <div class="card">
     <span class="k">Bugs become issues</span>
-    <p>#52 opens: <em>"Found during #15's live end-to-end run."</em> The reveal rendered for one frame before the leaderboard — "the quiz-show money moment never lands." Filed with a fix sketch and a written justification for deferring; fixed on day 14.</p>
+    <p>#52 opens: <em>"Found during #15's live end-to-end run."</em> The reveal rendered for one frame before the leaderboard — "the quiz-show money moment never lands." Filed with a fix sketch and a written justification for deferring; fixed two weeks in.</p>
   </div>
   <div class="card">
     <span class="k">Ideas get parked, not built</span>
-    <p>#29 (host accounts) is stamped <em>"Status: post-MVP — captured, not scheduled."</em> Accounts are a PRD non-goal, so step 1 would be a superseding ADR. #54 and #55 are fully specified future features left deliberately open.</p>
+    <p>#29 (host accounts) is stamped <em>"Status: post-MVP — captured, not scheduled for v0.1."</em> Accounts are a PRD non-goal, so step 1 would be a superseding ADR. #54 and #55 are fully specified future features left deliberately open.</p>
   </div>
   <div class="card">
     <span class="k">Honest division of labor</span>
@@ -295,7 +295,7 @@ Every feature is one GitHub issue with the same five-part shape — and the shap
 
 Per ADR-0009, every diagram is Mermaid in markdown — one per file, reviewed in the same PR as the change it depicts. These four are pre-rendered from the repo's own sources.
 
-![System overview diagram: clients, the relay server, AI tooling, and JSON data files, with the question pool as the shared seam](images/system-overview.svg "docs/diagrams/system-overview.md — the whole system in one glance. The AI paths exist in the architecture from day one but carry no v0.1 traffic.")
+![System overview diagram: clients, the relay server, AI tooling, and JSON data files, with the question pool as the shared seam](images/system-overview.svg "docs/diagrams/system-overview.md — the whole system at a glance. The AI paths exist in the architecture from day one but carry no v0.1 traffic.")
 
 ![Answer-secrecy trust boundary diagram: the answer key stays inside the server; blocked edges show it never crossing to host or phone](images/answer-secrecy.svg "docs/diagrams/answer-secrecy-boundary.md — the core invariant made visible: the answer key structurally never crosses the trust boundary (ADR-0001).")
 
@@ -335,7 +335,7 @@ test(<span class="kw">'a QuestionWire cannot carry the answer key (compile-time)
   assert.ok(fromRecord &amp;&amp; smuggled);
 });</pre>
 
-The same invariant is then enforced at four independent layers — colored here like the game's own answer identities:
+The same invariant is then enforced at four independent layers — coloured here like the game's own answer identities:
 
 <div class="cardgrid cards2">
   <div class="card accent-a"><span class="k">A · Compile time</span><p>The <code>never</code>-typed field plus <code>@ts-expect-error</code> regression tests. Branded nominal ids (<code>Brand&lt;T, B&gt;</code> via a <code>unique symbol</code>) keep a <code>RoomCode</code> from ever standing in for a <code>PlayerId</code> — zero runtime cost.</p></div>
@@ -357,7 +357,7 @@ The platform/game boundary got its own stress test on day 6. Building the client
   <span class="cm">// … the reveal exists in exactly one message, by construction</span></pre>
 
 <blockquote class="pull">
-  <p>"Left in place, every client would be built against a trivia-shaped protocol, cementing the leak exactly where it is most expensive to undo. […] The lint rule that forbids the platform from importing <code>src/games/*</code> now has nothing to hide."</p>
+  <p>"Left in place, every client (#12–#14) would be built against a trivia-shaped protocol, cementing the leak exactly where it is most expensive to undo. […] The lint rule that forbids the platform from importing <code>src/games/*</code> now has nothing to hide."</p>
   <cite>ADR-0011 — generic round protocol, written mid-build</cite>
 </blockquote>
 
@@ -367,7 +367,7 @@ The proof that the platform is genuinely generic is also a test: the room lifecy
 
 ## The mockups merged three hours before the code
 
-Before either client screen was built, issue #46 produced a UI spec and two standalone HTML mockup galleries — checked into the repo, openable by double-click, covering **every state including the edges**: 6 host frames and 11 phone frames, join errors and reconnect banners included. The commit log is the receipt: spec and mockups merged at 20:02 on July 15; the host screen landed at 22:56; the player phone at 00:08. Because the mockups used the exact design tokens of the planned app, "the CSS ports directly" — a head start, not throwaway.
+Before either client screen was built, issue #46 produced a UI spec and two standalone HTML mockup galleries — checked into the repo, openable by double-click, covering **every state including the edges**: 7 host frames and 11 phone frames, join errors and reconnect banners included. The commit log is the receipt: spec and mockups merged at 20:02 on July 15; the host screen landed at 22:56; the player phone at 00:08. Because the mockups used the exact design tokens of the planned app, "the CSS ports directly" — a head start, not throwaway work.
 
 <div class="swatches" aria-label="Design tokens">
   <span class="sw"><i style="background:#141021"></i><span>--ground</span></span>
@@ -387,13 +387,13 @@ The system is "quiz-show broadcast": a chosen plum-ink ground (not flat black), 
   <cite>docs/ui-spec.md — the colour rule</cite>
 </blockquote>
 
-Even secrecy shows up in the design layer: the host's mid-round view renders a payload that structurally contains no key, so *"the host structurally cannot show an answer mid-round."* And each mockup ends with a "Decisions I made — and the open questions for you" panel; the spec's decision table records the product owner's ✓ on each call and one explicit ✗ (per-answer vote counts — not in the wire payload, not MVP).
+Even secrecy shows up in the design layer: the host's mid-round view renders a payload that simply contains no key, so *"the host structurally cannot show an answer mid-round."* And each mockup ends with a "Decisions I made — and the open questions for you" panel; the spec's decision table records the product owner's ✓ on each call and one explicit ✗ (per-answer vote counts — not in the wire payload, not MVP).
 
 <p class="eyebrow">Quality loop</p>
 
 ## Reviews that produce commits, tests that guard themselves
 
-Quality ran as a loop, not a phase. A multi-agent architecture review on day 5 split its findings by cost: the cheap, high-value fixes shipped the same day as a hardening pass — including two latent bugs, one of which (an uncaught exception inside a `setTimeout` tick) would have taken *every room in the process* down. The bigger findings became tracked issues, landing next as four independently-green commits ordered *tests → flake fix → refactor → validation*, "so the refactor lands on a hardened, non-flaky suite."
+Quality ran as a loop, not a phase. A multi-agent architecture review on day 5 split its findings by cost: the cheap, high-value fixes shipped same-day as a hardening pass that closed two latent bugs — one of which (an uncaught exception inside a `setTimeout` tick) would have taken *every room in the process* down. The bigger findings became tracked issues, landing next as four independently-green commits ordered *tests → flake fix → refactor → validation*, "so the refactor lands on a hardened, non-flaky suite."
 
 <div class="cardgrid cards3">
   <div class="card">
@@ -412,7 +412,7 @@ Quality ran as a loop, not a phase. A multi-agent architecture review on day 5 s
 
 <div class="chartcard">
   <h3>Tests across the v0.1 pull requests</h3>
-  <div class="sub">npm test count reported in each PR body · node:test, zero test-framework dependencies</div>
+  <div class="sub">npm test count reported in each PR body · 164 at the CI gate, 166 by ship · node:test, zero test-framework dependencies</div>
   <svg viewBox="0 0 660 230" role="img" aria-label="Line chart: test count grows from 54 at PR 30 to 164 at PR 63">
     <g stroke="var(--hairline)" stroke-width="1">
       <line x1="52" y1="180" x2="640" y2="180"/>
@@ -516,7 +516,7 @@ v0.1 proved the loop with zero AI. The reordered roadmap (ADR-0013) now goes bre
 <footer class="article-foot">
   <p>
     Produced with Claude Code from the repository's own history — commits, ADRs, issue and PR bodies —
-    with every screen re-verified against a live game during production. The Pizza repo is private, so
+    with every screen re-verified against a live game while this page was produced. The Pizza repo is private, so
     artifacts are referenced by number rather than linked. Type is intentionally system sans + mono, per
     the product's own spec (no webfonts is a decision here, not an omission). Diagrams are pre-rendered
     from the repo's Mermaid sources, unmodified.

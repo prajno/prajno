@@ -273,6 +273,11 @@ export async function build() {
   // Self-hosted fonts for the shared shell.
   await cp(join(siteDir, 'fonts'), join(dist, 'fonts'), { recursive: true }).catch(() => {});
 
+  // Favicon set — referenced {{root}}-relative from both page shells.
+  for (const icon of ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png']) {
+    await cp(join(siteDir, icon), join(dist, icon)).catch(() => {});
+  }
+
   // Backstop for the custom domain configured in Settings -> Pages.
   await writeFile(join(dist, 'CNAME'), `${DOMAIN}\n`);
 

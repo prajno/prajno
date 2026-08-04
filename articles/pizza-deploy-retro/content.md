@@ -124,6 +124,25 @@ The fifteenth checkbox was the big one: `setup.sh`, the provisioning script, had
 
 A comment that says "idempotent" is a wish. A CI job that runs it twice is a fact.
 
+<p class="eyebrow">The shipping log</p>
+
+## Eight PRs, in the order they landed
+
+The first six fixes shipped *during* the incident — mid-firefight patches (#73, #74, #78–#81) that each stopped one specific bleed. The prevention backlog was different work: eight deliberate PRs, landed the next day on clean ground, each one making a whole *class* of failure impossible rather than closing a single instance. In order:
+
+| PR | What it made true |
+| --- | --- |
+| #84 | The SIGPIPE trap is caught at author time: a repo-specific shell lint, wired into the same `verify` gate as the product's tests — proven able to fail by running it against the exact historical file that caused the incident. The deploy script also now prints raw box observations before anything can fail. |
+| #85 | Monitoring can tell *stale* from *down*: every deploy uploads its shipped commit as an artifact, and a second monitor job compares the live `/version` against it. Also fixed a subtle attestation bug where, on the documented rollback path, the workflow would have stamped and asserted the wrong commit — self-consistently. |
+| #86 | The commit stamp travels with the bytes: emitted into the build artifact as the build's last act, read from beside the compiled module — so a process restarted onto old code reports *old* code, proven with a planted decoy stamp. |
+| #87 | The two working agreements the night was missing — reproduce in the exact shell, *flags included*; a check's verdict loses to a direct observation — written into the project guide, with the operational detail moved to a debugging runbook. Closed the skill-handoff gap too. |
+| #88 | Failures describe observations, not guesses: the bot's timeout reports rounds seen and last message instead of asking "is the server running?", and the host screen renders a refused room as actionable copy instead of an eternal spinner. |
+| #89 | Config drift is detectable from outside: an open JSON endpoint reports the effective game settings, asserted against stated intent at deploy time — with a payload that structurally cannot carry a secret. |
+| #90 | Diagnosis executes the real checks: the deploy gate's precondition functions moved to a shared library, and a read-only `diagnose` operation runs *them* — because reproducing a check's inputs by hand is exactly how the SIGPIPE bug stayed hidden. |
+| #91 | The idempotence harness above — `setup.sh` run twice against real systemd on every change to the deploy scripts. Merging it closed the milestone. |
+
+Two habits carried across all eight, and they were the retro talking: every check shipped alongside a demonstration that it *can* fail — the lint against the historical bug, the drift check against a planted mismatch, the harness against the incident's exact shape — and every failure message was rewritten to report what was observed rather than what the author guessed. The night's tuition, paid forward.
+
 <p class="eyebrow">Skills</p>
 
 ## The skill grew a proof step
@@ -155,8 +174,8 @@ The MVP case study ended with a quality loop for the *game*: specs that read lik
   <p>
     Produced with Claude Code from the repository's own history — CI run logs, commits, PR and issue
     bodies, and the retro document in <code>docs/retros/</code> — during and immediately after the
-    session it describes. The Pizza repo is private, so artifacts are referenced by description rather
-    than linked. The incident timeline and every quoted measurement (exit codes, PIDs, durations) come
+    session it describes. The Pizza repo is private, so artifacts are referenced by number rather
+    than linked, as in the case study before it. The incident timeline and every quoted measurement (exit codes, PIDs, durations) come
     from the reconstructed retro, which was itself fact-checked against primary sources before this
     page was written.
   </p>

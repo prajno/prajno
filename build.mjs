@@ -159,8 +159,13 @@ function articleMeta(data) {
 // the home page's script handles expand/collapse and forwards a collapsed click into the
 // iframe. An article with `external:` in front matter renders as a card that links out —
 // intro paragraphs + image, no expand/collapse.
-function articleList(articles) {
-  const items = articles.map((article) => {
+//
+// The list is split into two labeled sections: the ongoing series, then — after a gap —
+// an Archive holding every article flagged `archive: true` in front matter. Both labels
+// come from the home page's front matter (`articlesLabel:` / `archiveLabel:`), falling
+// back to "Writing" / "Archive" when unset.
+function articleList(articles, labels = {}) {
+  const item = (article) => {
     const { slug, data } = article;
     if (data.external) {
       const img = data.image
@@ -206,9 +211,17 @@ ${renderMarkdown(article.body)}
       </div>
     </div>
   </article>`;
-  });
-  const label = `  <div class="list-label">Writing · ${String(articles.length).padStart(2, '0')}</div>`;
-  return `<div class="articles">\n  <div class="inner">\n${label}\n${items.join('\n')}\n  </div>\n</div>`;
+  };
+  const isArchived = (article) => String(article.data.archive) === 'true';
+  const section = (label, list, cls = '') => (list.length
+    ? [`  <div class="list-label${cls}">${escape(label)} · ${String(list.length).padStart(2, '0')}</div>`,
+       ...list.map(item)].join('\n')
+    : '');
+  const sections = [
+    section(labels.articlesLabel ?? 'Writing', articles.filter((a) => !isArchived(a))),
+    section(labels.archiveLabel ?? 'Archive', articles.filter(isArchived), ' archive'),
+  ].filter(Boolean).join('\n');
+  return `<div class="articles">\n  <div class="inner">\n${sections}\n  </div>\n</div>`;
 }
 
 // The og:image for an article: an explicit `image:` in front matter wins, else the first
@@ -257,7 +270,7 @@ export async function build() {
   // generated <ul> isn't nested inside one.
   const homeHtml = renderMarkdown(home.body).replace(
     /<p>\{\{articles\}\}<\/p>|\{\{articles\}\}/,
-    () => articleList(articles), // function replacer — see renderPage
+    () => articleList(articles, home.data), // function replacer — see renderPage
   );
   // Front-matter image (site-root relative) -> the home page's og:image share card.
   const homeImage = home.data.image ? `${SITE_URL}/${home.data.image.replace(/^\//, '')}` : undefined;

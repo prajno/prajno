@@ -7,6 +7,7 @@ source: Medium
 readtime: 5 min
 image: images/style-debt-hero.jpeg
 description: Rolling out a new grid, font, and scale across a feature-heavy Angular app mid-migration — using themes and feature flags to do it without a big-bang release.
+archive: true
 ---
 
 *From 2020, mid-migration at One Medical:*

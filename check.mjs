@@ -86,6 +86,13 @@ for (const article of articles) {
   if (article.data.date && !/^\d{4}-\d{2}-\d{2}$/.test(article.data.date)) {
     fail(label, `date "${article.data.date}" is not YYYY-MM-DD`);
   }
+  // `draft:` / `archive:` activate only on the literal `true` — a near-miss (`yes`,
+  // `ture`) silently files the article in the wrong place with no other symptom.
+  for (const flag of ['draft', 'archive']) {
+    if (flag in article.data && !['true', 'false'].includes(article.data[flag])) {
+      fail(label, `front matter \`${flag}: ${article.data[flag]}\` does nothing — use \`true\`, or drop the line`);
+    }
+  }
   // The og:image never appears as an href/src, so the link pass below can't see it.
   if (article.data.image) {
     if (/^(https?:)?\/\//.test(article.data.image) || article.data.image.startsWith('/')) {

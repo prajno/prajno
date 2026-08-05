@@ -69,6 +69,7 @@ subtitle: "The standfirst. Quote it if it contains a colon."
 date: 2026-07-27
 description: Optional. Falls back to the subtitle for meta/og tags.
 draft: true    # optional — keeps the article out of the build entirely
+archive: true  # optional — lists the article under the home page's Archive section
 ---
 ```
 
@@ -88,7 +89,10 @@ directory that doesn't exist. (The site serves from the root of `prajno.com`; th
 
 The home page is `site/index.md`. Its `{{articles}}` placeholder generates the article
 accordions from front matter, so **publishing a new article never means editing the home
-page**.
+page**. The listing is split into two labeled sections: the ongoing series (every article
+by default), then — after a gap — an **Archive** for articles flagged `archive: true`.
+Both section labels live in `site/index.md` front matter (`articlesLabel:` /
+`archiveLabel:`), falling back to "Writing" / "Archive" when unset.
 
 Only `content.md` is built. Other markdown alongside it (e.g. `articles/pizza-mvp/medium.md`,
 the Medium-shaped draft of the case study) is source material the build ignores. Rich

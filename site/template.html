@@ -105,10 +105,14 @@
   /* Accordions run the full viewport width — only the pinned header is exempt. */
   .articles { width: 100vw; margin-left: calc(50% - 50vw); }
   .articles .inner { padding: 0 16px; }
-  .list-label { display: flex; align-items: center; gap: 14px; margin: 30px 0 0;
+  .list-label { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 30px 0 0;
                 font-family: var(--font-label); font-size: 12px; letter-spacing: 0.22em;
                 text-transform: uppercase; color: var(--accent); }
-  .list-label::after { content: ""; flex: 1; height: 1px; background: var(--hairline); }
+  /* min-width keeps the hairline from being starved to 0 by a long label — it wraps to a
+     full-width rule below the text instead */
+  .list-label::after { content: ""; flex: 1; min-width: 48px; height: 1px; background: var(--hairline); }
+  /* the Archive section sits apart from the series above it */
+  .list-label.archive { margin-top: 76px; }
 
   .acc { margin: 22px 0; }
   .acc-inner { border: 1px solid var(--hairline); border-radius: var(--radius);

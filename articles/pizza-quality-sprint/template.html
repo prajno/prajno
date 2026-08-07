@@ -235,7 +235,8 @@
     background: var(--panel-bg); border: 1px solid var(--hairline); border-radius: var(--r);
     padding: 18px; overflow-x: auto;
   }
-  figure img { display: block; width: 100%; height: auto; }
+  /* Natural size, capped by the panel — a 390px-wide phone screenshot must not upscale blurry. */
+  figure img { display: block; width: auto; max-width: 100%; height: auto; margin: 0 auto; }
   figcaption { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted);
                margin-top: 12px; max-width: 76ch; }
 

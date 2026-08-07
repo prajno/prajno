@@ -74,7 +74,11 @@ Locator: getByRole('button', { name: 'Final results' })
 
 — failing at exactly the symptom the original bug produced, then passing with the fix restored. The rejoin PR runs its two mutants and quotes the kill: *"Ada dropped with 0 points, so score preservation was NOT exercised."* The prod-shape leg goes further and turns drift itself into a test: a TypeScript test reads the persistence-check needle out of the shell script and asserts it against what the store actually writes, so the bash and the state format cannot wander apart silently.
 
+![The host screen paused at the standings, showing player Smoke in first place and a Final results button](images/host-paused-standings.png "The frame the mutation check fights over: host-paced standings with the advance control in it. This button renders only if the transport parser carries `awaitingHost` — strip the field, and this exact screenshot is a leaderboard with no way forward.")
+
 The browser smoke's price tag is the best part: 7.5 seconds in CI — one spec, one Chromium, one real round through the built client — and it's deliberately kept out of the verify gate, so a browser download never slows the fast loop. (The spec and its config are still *typechecked* inside that gate, which costs nothing and catches the cheap mistakes without launching anything.)
+
+![The host lobby screen with a QR code, a four-letter room code, and one player named Smoke joined](images/host-lobby.png "Where every smoke run starts: the harness's host page auto-creates a room, and a second real browser joins it as \"Smoke\". Every product screenshot in this dispatch was taken by the spec itself, on an opt-in local run (#144) — the test that plays the round also photographs it.")
 
 <p class="eyebrow">The debt</p>
 
@@ -117,6 +121,8 @@ This wasn't a features-frozen week, and the two that shipped are both quality wo
 
 **A light theme that proves its own contrast.** The light theme's semantic text — error copy, "reconnecting," the answer lock — was landing at 2.7–3.3:1 against WCAG AA's 4.5:1 bar, the classic same-hue-tint trap. The fix added dedicated ink tokens, but the interesting part is the test that now guards them: it parses the theme's CSS, reimplements `color-mix()` and WCAG relative luminance, and asserts every ink clears 4.5:1 on the backdrop it *actually* composites over — plus a both-ways drift guard asserting the OS-preference and explicit-toggle theme blocks stay identical, so a token dropped from one fails loudly instead of silently keeping the other's value. A 62-agent adversarial pass then caught the test itself modeling the wrong backdrop — badges composite over the page gradient, not the card surface; real ratios 4.0–4.4:1, under the pin; *passing test, failing screen* — and the inks got darker again. The 32px badges legally qualify for WCAG's relaxed 3:1 large-text bar; they're held to 4.5:1 anyway, so no future size change can silently demote them.
 
+![The player phone mid-round in light theme: a question with four tinted answer options labeled A through D](images/player-round.png "The surface #50 is about, in the light theme that failed it: four same-hue tinted options whose text now uses dedicated ink tokens — every pairing held to 4.5:1 by a test that parses this CSS and does the contrast math itself.")
+
 <p class="eyebrow">The ledger</p>
 
 ## Deliberately not done
@@ -143,6 +149,8 @@ The platform still refuses to tell your phone the answer. Now it also refuses to
     review threads, CI run logs, and the docs the week changed — and fact-checked against those
     sources before this page was written. The Pizza repo is private, so artifacts are referenced
     by number rather than linked, as in the case study and the retro before it. Test counts are
-    the CI runner's own (the retro's 205 and this page's 287 are counted the same way).
+    the CI runner's own (the retro's 205 and this page's 287 are counted the same way). The
+    product screenshots were captured by the Playwright smoke itself on an opt-in local run
+    (#144) — no frame was staged by hand.
   </p>
 </footer>

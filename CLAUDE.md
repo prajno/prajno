@@ -121,6 +121,15 @@ pages reference them via the `{{root}}` token so paths stay relative at any dept
   structural) and 639px (below sm, compact phone spacing) — with display type fluid via
   `clamp()`. Nothing changes above 768px; per-article templates may keep their own
   scoped breakpoints (pizza-mvp uses 1080px).
+- `site/js/intro.js` — the home page's terminal cold-open, loaded by the shared shell and
+  copied to `dist/js/` by the build. The head script decides *whether* it runs (`.home` —
+  top-level home page, motion allowed; `.intro` — not visited in the last hour) and the
+  module plays it: a list of beats, each of which knows how to run forwards and backwards,
+  so the replay control in the header can rewind the page and play it again. Everything
+  that moves in CSS is a transition between the root classes `.intro` / `.boot` / `.pin` /
+  `.rewind`, documented in the stylesheet — keyframe animations can't be reversed this way,
+  so don't reintroduce them there. It talks to the accordion script through two events,
+  `prajno:replay` and `prajno:settled`.
 - **Per-article template override** — if `articles/<slug>/template.html` exists, that
   article is rendered with it instead of the shared shell, and its presentation (CSS/JS)
   lives entirely in that file, scoped to that page alone. The build fills `{{title}}`,

@@ -9,19 +9,32 @@
 <link rel="apple-touch-icon" href="{{root}}apple-touch-icon.png">
 {{meta}}
 <script>
-  // Arm the intro before first paint so nothing flashes: home page only (articles live
-  // under /articles/), JS present by definition, and never under reduced motion.
-  if (!/\/articles\//.test(location.pathname) &&
-      matchMedia("(prefers-reduced-motion: no-preference)").matches) {
-    document.documentElement.classList.add("intro");
+  // The cold-open is armed here, before first paint, so a page that is about to animate
+  // never flashes its finished state first. Two decisions, recorded as root classes:
+  //   .home   this page can run the intro at all — the top-level home page (articles live
+  //           under /articles/, and peek inside iframes), JS present by definition, and
+  //           motion not turned down. site/js/intro.js does nothing without it.
+  //   .intro  it should run right now — this visitor hasn't loaded the site in an hour.
+  (function () {
+    var root = document.documentElement;
+    if (/\/articles\//.test(location.pathname) || window.self !== window.top) return;
+    if (!matchMedia("(prefers-reduced-motion: no-preference)").matches) return;
+    root.classList.add("home");
+    var KEY = "prajno.lastVisit", HOUR = 60 * 60 * 1000, now = Date.now(), last = 0;
+    try {
+      last = Number(localStorage.getItem(KEY)) || 0;
+      localStorage.setItem(KEY, String(now));
+    } catch (e) { /* storage walled off (private mode) — treat every load as the first */ }
+    if (now - last < HOUR) return;   // seen recently: land on the finished page instead
+    root.classList.add("intro");
     // Safety valve: if the typing sequence never boots (a script error, an ancient
     // browser), un-hide the static page instead of leaving it blank.
     setTimeout(function () {
-      var c = document.documentElement.classList;
-      if (!c.contains("boot")) c.remove("intro");
+      if (!root.classList.contains("boot")) root.classList.remove("intro");
     }, 1500);
-  }
+  })();
 </script>
+<script src="{{root}}js/intro.js" defer></script>
 <style>
   /* ————— prajno.com design system: "Drafting Room" ————————————————————————
      Deep-olive ground, chartreuse accent, condensed display caps over a grid of
@@ -93,7 +106,9 @@
                  background: color-mix(in srgb, var(--ground) 92%, transparent);
                  backdrop-filter: blur(6px);
                  border-bottom: 1px solid var(--hairline); }
-  .site-header .inner { max-width: 1100px; margin: 0 auto; padding: 20px 32px 16px; }
+  /* position: relative anchors the replay control to the header's top right corner */
+  .site-header .inner { position: relative; max-width: 1100px; margin: 0 auto;
+                        padding: 20px 32px 16px; }
   .site-header h1 { margin: 0; font-family: var(--font-display); font-weight: 700;
                     font-size: clamp(32px, 9vw, 44px); line-height: 0.98; letter-spacing: 0.01em;
                     text-transform: uppercase; }
@@ -195,36 +210,59 @@
   }
 
   /* ————— load sequence: a terminal cold-open —————
-     The head script arms html.intro (home page + motion OK + JS only) BEFORE first
-     paint. The body script then types "Welcome to my website…", blinks, deletes it,
-     types the title, and adds .pin — which slides the header up and cascades the
-     subtitle and articles. Any interaction skips straight to .pin. */
+     The head script arms the root classes before first paint; site/js/intro.js types
+     "Welcome to my website…", deletes it, types the title, and hands over to .pin.
+     Four classes describe the whole thing:
+
+       .home    this page may run an intro (and may offer to replay it)
+       .intro   the intro owns the page — header parked mid-viewport, subtitle and list held
+       .boot    the terminal line is mounted, so the header's contents may show
+       .pin     the finished state — header up top, subtitle and list cascaded in
+       .rewind  the same journey playing backwards, from the replay control
+
+     Every step is a TRANSITION between those states, never a keyframe animation. That is
+     what makes the replay possible: a transition plays in whichever direction the class
+     went, and adding .pin to a page that is already settled (what a replay does before it
+     rewinds anything) is a no-op rather than a re-entry. Any interaction skips to .pin. */
   html.intro .site-header { transform: translateY(calc(50vh - 100%));
                             border-color: transparent; background: transparent;
                             backdrop-filter: none; }
   html.intro .site-header .inner { opacity: 0; }      /* until the terminal line is prepared */
   html.intro.boot .site-header .inner { opacity: 1; }
-  html.intro .subtitle { opacity: 0; }
-  html.intro .list-label, html.intro .acc { opacity: 0; visibility: hidden; }
-  html.intro.pin .list-label, html.intro.pin .acc { visibility: visible; }
   .site-header { transition: transform 0.55s cubic-bezier(0.22, 0.9, 0.3, 1),
                              background 0.3s, border-color 0.3s; }
-  .subtitle { transition: opacity 0.3s ease-out; }
   html.intro.pin .site-header { transform: none; border-color: var(--hairline);
                                 background: color-mix(in srgb, var(--ground) 92%, transparent);
                                 backdrop-filter: blur(6px); }
+  /* rewinding, the list clears out first and the header follows it back down */
+  html.intro.rewind .site-header { transition-delay: 0.5s; }
+
+  html.intro .subtitle { opacity: 0; }
+  .subtitle { transition: opacity 0.3s ease-out; }
   html.intro.pin .subtitle { opacity: 1; transition-delay: 0.4s; }
-  html.intro.pin .list-label { animation: art-in 0.35s ease-out 0.5s forwards; }
-  html.intro.pin .acc:nth-of-type(1) { animation: art-in 0.35s ease-out 0.6s forwards; }
-  html.intro.pin .acc:nth-of-type(2) { animation: art-in 0.35s ease-out 0.75s forwards; }
-  html.intro.pin .acc:nth-of-type(3) { animation: art-in 0.35s ease-out 0.9s forwards; }
-  html.intro.pin .acc:nth-of-type(4) { animation: art-in 0.35s ease-out 1.05s forwards; }
-  html.intro.pin .acc:nth-of-type(n+5) { animation: art-in 0.35s ease-out 1.2s forwards; }
-  @keyframes art-in {
-    from { opacity: 0; transform: translateX(48px); }  /* fade 150ms into the slide */
-    43%  { opacity: 1; }
-    to   { opacity: 1; transform: none; }
-  }
+  html.intro.rewind .subtitle { transition-delay: 0.15s; }
+
+  /* The list cascade: each row slides in from the right, its fade starting 150ms into the
+     slide. --in and --out are that row's place in the queue — arriving, and leaving in the
+     reverse order. visibility flips at the ends so a row is never a hit target early or an
+     invisible one late. */
+  html.intro .list-label, html.intro .acc { opacity: 0; transform: translateX(48px);
+                                            visibility: hidden; }
+  html.intro.pin .list-label, html.intro.pin .acc {
+    opacity: 1; transform: none; visibility: visible;
+    transition: transform 0.35s ease-out var(--in),
+                opacity 0.2s ease-out calc(var(--in) + 0.15s),
+                visibility 0s linear var(--in); }
+  html.intro.rewind .list-label, html.intro.rewind .acc {
+    transition: transform 0.28s ease-in var(--out),
+                opacity 0.2s ease-in var(--out),
+                visibility 0s linear calc(var(--out) + 0.28s); }
+  html.intro .list-label           { --in: 0.50s; --out: 0.50s; }
+  html.intro .acc:nth-of-type(1)   { --in: 0.60s; --out: 0.40s; }
+  html.intro .acc:nth-of-type(2)   { --in: 0.75s; --out: 0.30s; }
+  html.intro .acc:nth-of-type(3)   { --in: 0.90s; --out: 0.20s; }
+  html.intro .acc:nth-of-type(4)   { --in: 1.05s; --out: 0.10s; }
+  html.intro .acc:nth-of-type(n+5) { --in: 1.20s; --out: 0s; }
   @media (prefers-reduced-motion: no-preference) {
     .acc-panel, .acc-tilt, .acc-shield { will-change: transform, opacity; }
   }
@@ -236,6 +274,24 @@
                  font-family: var(--font-label); font-weight: 500;
                  animation: cursor-blink 1.06s steps(1) infinite; }
   @keyframes cursor-blink { 50% { opacity: 0; } }
+
+  /* the replay control — injected into the header by site/js/intro.js, faded in once the
+     intro has settled. Hidden means visibility: hidden too, so it leaves the tab order. */
+  .replay { position: absolute; top: 14px; right: 26px; width: 34px; height: 34px;
+            padding: 5px; background: none; border: 0; border-radius: 999px;
+            color: var(--muted); cursor: pointer;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.5s ease, color 0.2s ease, visibility 0s linear 0.5s; }
+  .replay.on { opacity: 1; visibility: visible;
+               transition: opacity 0.5s ease, color 0.2s ease, visibility 0s; }
+  .replay:hover, .replay:focus-visible { color: var(--accent); }
+  .replay svg { display: block; width: 100%; height: 100%; }
+  /* The one responsive rule that can't live in the block above: these declarations would
+     lose to the equally specific ones here, which the cascade reaches later. Same sm
+     breakpoint — the header's padding tightens, and a finger needs a bigger target. */
+  @media (max-width: 639px) {
+    .replay { top: 6px; right: 8px; width: 44px; height: 44px; padding: 10px; }
+  }
 </style>
 </head>
 <body>
@@ -262,121 +318,9 @@
     var header = document.querySelector(".site-header");
     var motionOK = !matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    /* ——— terminal cold-open ——— */
-    if (root.classList.contains("intro")) {
-      (function () {
-        var TYPE_MS = 120;   // ~100 wpm
-        var DELETE_MS = 45;  // backspace is quicker than typing
-        var WELCOME = "Welcome to my website...";
-        var h1 = header.querySelector("h1");
-        var original = h1.innerHTML;
-        var finalText = h1.textContent.trim();              // e.g. "PRAJNO.com"
-        // Each character of the wordmark, tagged with the class of the span it lives in
-        // (accent dot, lowercase tld) — so the title types out already wearing its styling.
-        var charSpec = [];
-        Array.prototype.forEach.call(h1.childNodes, function (node) {
-          var cls = node.nodeType === 1 ? node.className : null;
-          var text = node.textContent;
-          for (var i = 0; i < text.length; i += 1) charSpec.push({ c: text[i], cls: cls });
-        });
-        var skipped = false;
-
-        var line = document.createElement("span");
-        var cursor = document.createElement("span");
-        cursor.className = "type-cursor";
-        cursor.textContent = "_";
-        line.setAttribute("aria-hidden", "true");
-        cursor.setAttribute("aria-hidden", "true");
-        h1.setAttribute("aria-label", finalText);           // readers get the real title
-        h1.classList.add("term");
-        h1.textContent = "";
-        h1.append(line, cursor);
-        root.classList.add("boot");
-
-        function finish() {
-          h1.classList.remove("term");
-          h1.innerHTML = original;
-          h1.removeAttribute("aria-label");
-          root.classList.add("pin");
-        }
-        // A visitor who clicks, types, or scrolls gets the finished page immediately.
-        ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (ev) {
-          addEventListener(ev, function onSkip() {
-            skipped = true;
-            removeEventListener(ev, onSkip);
-          }, { once: true, passive: true });
-        });
-
-        function wait(ms) {
-          // Skip-aware: a visitor bailing during a hold shouldn't wait it out.
-          return new Promise(function (res) {
-            var t0 = Date.now();
-            (function tick() {
-              if (skipped || Date.now() - t0 >= ms) return res();
-              setTimeout(tick, 80);
-            })();
-          });
-        }
-        function jitter(ms) { return ms + Math.random() * 40 - 20; }
-        function type(text, ms) {
-          return new Promise(function (res) {
-            var i = 0;
-            (function tick() {
-              if (skipped) return res();
-              i += 1;
-              line.textContent = text.slice(0, i);
-              if (i < text.length) setTimeout(tick, jitter(ms));
-              else res();
-            })();
-          });
-        }
-        function typeMark(ms) {
-          return new Promise(function (res) {
-            var i = 0;
-            (function tick() {
-              if (skipped) return res();
-              i += 1;
-              line.innerHTML = charSpec.slice(0, i).map(function (ch) {
-                var c = ch.c.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-                return ch.cls ? '<span class="' + ch.cls + '">' + c + "</span>" : c;
-              }).join("");
-              if (i < charSpec.length) setTimeout(tick, jitter(ms));
-              else res();
-            })();
-          });
-        }
-        function erase(ms) {
-          return new Promise(function (res) {
-            (function tick() {
-              if (skipped) return res();
-              var text = line.textContent;
-              line.textContent = text.slice(0, -1);
-              if (line.textContent.length) setTimeout(tick, ms);
-              else res();
-            })();
-          });
-        }
-
-        (async function () {
-          await wait(350);
-          await type(WELCOME, TYPE_MS);
-          await wait(1000);                                 // let the cursor blink a beat
-          await erase(DELETE_MS);
-          await wait(180);
-          if (skipped) return finish();
-          h1.classList.remove("term");                      // the title types in display face
-          await typeMark(TYPE_MS);
-          await wait(220);
-          if (skipped) return finish();
-          h1.innerHTML = original;                          // identical rendering — no jump
-          h1.removeAttribute("aria-label");
-          h1.append(cursor);
-          await wait(500);
-          cursor.remove();
-          root.classList.add("pin");
-        })();
-      })();
-    }
+    /* The cold-open lives in site/js/intro.js. It talks to this script through two events:
+       "prajno:replay" (about to rewind the page — collapse anything a reader opened) and
+       "prajno:settled" (the header is at its final size, so the measurements below hold). */
 
     function measure() {
       root.style.setProperty("--header-h", header.offsetHeight + "px");
@@ -386,6 +330,9 @@
     }
     measure();
     addEventListener("resize", measure);
+    // During the intro the header wears the smaller terminal face, so the height measured
+    // above is short-lived; re-measure once the real wordmark is back in place.
+    addEventListener("prajno:settled", measure);
 
     function setOpen(acc, open) {
       acc.classList.toggle("open", open);
@@ -398,6 +345,8 @@
     function collapseAll() {
       accs.forEach(function (a) { setOpen(a, false); });
     }
+    // A replay rewinds the whole page; an article a reader expanded shouldn't ride along.
+    addEventListener("prajno:replay", collapseAll);
     // One expanded at a time: expanding an accordion collapses the others, then pins its
     // bar just under the sticky header so the panel takes over the rest of the viewport.
     function expand(acc) {

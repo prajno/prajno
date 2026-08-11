@@ -286,6 +286,9 @@ export async function build() {
   // Self-hosted fonts for the shared shell.
   await cp(join(siteDir, 'fonts'), join(dist, 'fonts'), { recursive: true }).catch(() => {});
 
+  // Scripts the shared shell loads rather than inlines (the home page's intro sequence).
+  await cp(join(siteDir, 'js'), join(dist, 'js'), { recursive: true }).catch(() => {});
+
   // Favicon set — referenced {{root}}-relative from both page shells.
   for (const icon of ['favicon.svg', 'favicon-32.png', 'apple-touch-icon.png']) {
     await cp(join(siteDir, icon), join(dist, icon)).catch(() => {});

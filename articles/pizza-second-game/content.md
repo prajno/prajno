@@ -23,7 +23,7 @@ image: images/bs-host-gameover.png
     <div class="stat"><div class="n">627</div><div class="l">tests · was 463</div></div>
     <div class="stat"><div class="n">5</div><div class="l">admin views · the ops console</div></div>
     <div class="stat"><div class="n">2</div><div class="l">bench items cleared · of 5</div></div>
-    <div class="stat"><div class="n">0.1.0</div><div class="l">still no tag</div></div>
+    <div class="stat"><div class="n">12</div><div class="l">landings on main</div></div>
   </div>
   <p class="hero-note">Set in Battleship's own CRT theme — the one dispatch that doesn't wear the house colors.</p>
 </header>
@@ -206,27 +206,23 @@ is named rather than asserted away.
 
 ## Still on the bench
 
-Matter-of-fact, tracked by number, in the series tradition:
+Still open, tracked by number:
 
-- **No version tag, still.** `package.json` reads `0.1.0`; the repo has never cut one. Two games are on
-  the board and the release ritual has yet to fire once.
-- **The bot drives the wire, not the client** (#221). The smoke bot still plays through the protocol, not
-  the real browser — untouched this week.
-- **Agent hygiene, round two.** The stale parallel-agent worktrees under `.claude/` are correctly ignored
-  but still unswept on the record.
+- **The bot drives the wire, not the browser client** (#221). The smoke bot plays through the protocol,
+  not the real browser client — untouched this week.
+- **Stale parallel-agent worktrees under `.claude/`** remain — ignored by git, not yet swept.
 
 <p class="eyebrow">Next</p>
 
-## v0.3, still calling in
+## v0.3 — Claude calls in
 
-The tease survives another dispatch: v0.3 is where Claude calls *in* — an MCP server wrapping the question
-pool and game stats, with a generate-then-verify pipeline behind it, the platform's first `AIService`
-consumer. What changed is that the platform is now actually shaped for a caller like that: two registered
-games, typed round rules, per-seat views, and an event spine with a console to watch it all happen.
+With v0.2's goal met, the version bump from `0.1.0` to `0.2.0` follows in a release branch (#281). Next is
+v0.3, where Claude calls *in*: an MCP server wrapping the question pool and game stats, with a
+generate-then-verify pipeline behind it — the platform's first `AIService` consumer.
 
-Two games are playable. The platform can register a second, hide a fleet from the seat beside it, and read
-its own history back. It still hasn't cut a release — but this was never the week for that. It was the
-week the bench got clear enough to finally start the fun part.
+The platform is now shaped for that caller: two registered games, typed round rules, per-seat views, and an
+event spine with a console to watch it happen. It can register a second game, hide a fleet from the seat
+beside it, and read its own history back.
 
 <footer class="article-foot">
   <p>

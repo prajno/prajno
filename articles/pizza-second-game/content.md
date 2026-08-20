@@ -1,6 +1,6 @@
 ---
 title: "Two games on the board"
-subtitle: "The second game got a client and its own green-CRT skin, the event spine grew a console you can read, and the platform learned where its design ends and a game's begins — v0.2's real goal, reached. The version still says 0.1.0."
+subtitle: "The second game got a client and its own green-CRT skin, the event spine grew a console you can read, and the platform learned where its design ends and a game's begins — v0.2's real goal, reached."
 date: 2026-08-20
 description: The fifth Pizza dispatch — Battleship becomes playable, the write-only telemetry spine grows an ops console, and the platform draws the line between its own chrome and a game's theme. Rendered, this once, in Battleship's own Apple II CRT.
 image: images/bs-host-gameover.png
@@ -15,8 +15,7 @@ image: images/bs-host-gameover.png
     Battleship went from a server with no client to a game you can actually play, in its own Apple II
     green-phosphor skin; the write-only event spine grew a five-view console that reads itself back; and
     the platform drew a hard line between the chrome it owns and the theme a game brings. That's v0.2's
-    real goal — <strong>a second, genuinely playable game</strong> — reached. The version number still
-    says 0.1.0.
+    real goal — <strong>a second, genuinely playable game</strong> — reached.
   </p>
   <div class="statgrid">
     <div class="stat"><div class="n">2</div><div class="l">playable games · was 1</div></div>

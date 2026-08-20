@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<link rel="icon" href="{{root}}favicon.svg" type="image/svg+xml">
+<link rel="icon" href="{{root}}favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="{{root}}apple-touch-icon.png">
+{{meta}}
+<style>
+  /* ————— Battleship's own theme, borrowed for one dispatch (docs/adr/0021, crt.css) —————
+     Apple II green phosphor. One hue: hierarchy is brightness + inverse video, never a
+     second color. Fixed dark by design — a CRT has no light mode. */
+  @font-face {
+    font-family: 'PrintChar21';
+    /* Kreative Software free-use license: shipped verbatim, unmodified, credited (see foot). */
+    src: url('images/fonts/PrintChar21.ttf') format('truetype');
+    font-weight: normal; font-style: normal; font-display: swap;
+  }
+
+  :root {
+    color-scheme: dark;
+    --bs-ground: #001100;
+    --bs-phosphor: #33ff33;
+    --bs-bright: #7dff8a;   /* a touch hotter, for the headline glow only */
+    --bs-faint: #00aa00;    /* labels, captions — ~6.3:1 on the ground, clears AA */
+    --bs-grid-line: #045104;
+    --bs-ink: var(--bs-ground);
+    --bs-panel: #001a00;
+    --font-crt: 'PrintChar21', ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+    --maxw: 68ch;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(ellipse 120% 90% at 50% 40%, #001d00 0%, #000c00 100%),
+      var(--bs-ground);
+    color: var(--bs-phosphor);
+    font-family: var(--font-mono);
+    line-height: 1.72;
+    font-size: 16px;
+    letter-spacing: 0.01em;
+    overflow-x: hidden; /* the shell's convention: overflow hides, never scrolls the body */
+    overflow-wrap: break-word; /* a long unbroken token wraps rather than clipping under overflow-x */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Static scanline grille — no animation, so it costs nothing on reduced-motion either. */
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: 9; pointer-events: none;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0, 0, 0, 0.22) 0, rgba(0, 0, 0, 0.22) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode: multiply;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation: none !important; transition: none !important; }
+  }
+
+  main { position: relative; z-index: 1; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 40px 40px; }
+
+  /* ————— type ————— */
+  h1, h2, h3 { line-height: 1.12; margin: 0; text-wrap: balance; }
+  h1 {
+    font-family: var(--font-crt); font-weight: normal;
+    font-size: 48px; letter-spacing: 0.01em; color: var(--bs-bright);
+    text-shadow: 0 0 10px rgba(51, 255, 51, 0.45), 0 0 2px rgba(125, 255, 138, 0.6);
+  }
+  h1 .brand { background: var(--bs-phosphor); color: var(--bs-ink); padding: 0 0.18em; text-shadow: none; }
+  h2 {
+    font-family: var(--font-crt); font-weight: normal;
+    font-size: 24px; color: var(--bs-bright); margin-bottom: 14px; scroll-margin-top: 30px;
+    text-shadow: 0 0 8px rgba(51, 255, 51, 0.35);
+  }
+  h3 { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--bs-phosphor); }
+  main h3 { margin: 32px 0 8px; }
+  p { margin: 0 0 1em; max-width: var(--maxw); }
+  main p, main ul { color: color-mix(in srgb, var(--bs-phosphor) 82%, var(--bs-faint)); }
+  main ul { max-width: var(--maxw); padding-left: 1.25em; }
+  main li { margin: 0.32em 0; }
+  main li::marker { color: var(--bs-faint); }
+  strong { color: var(--bs-bright); font-weight: 700; }
+  a {
+    color: var(--bs-bright); text-decoration: underline;
+    text-decoration-color: var(--bs-grid-line); text-underline-offset: 2px;
+  }
+  a:hover { background: var(--bs-phosphor); color: var(--bs-ink); text-decoration: none; }
+  code {
+    font-family: var(--font-mono); font-size: 0.86em;
+    background: var(--bs-panel); border: 1px solid var(--bs-grid-line);
+    color: var(--bs-bright); padding: 1px 6px; border-radius: 0;
+    word-break: break-word; /* inline paths/identifiers wrap on narrow screens */
+  }
+
+  /* Inverse-video kicker — Battleship's own label style (crt.css .bs-inv). */
+  .eyebrow {
+    display: inline-block; font-family: var(--font-mono);
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    background: var(--bs-phosphor); color: var(--bs-ink);
+    padding: 2px 9px; margin: 76px 0 14px; max-width: none;
+  }
+
+  /* ————— hero ————— */
+  .hero { padding: 84px 0 8px; }
+  .hero .eyebrow { margin: 0 0 16px; }
+  .hero .lede {
+    font-size: 1.1rem; line-height: 1.7; color: var(--bs-phosphor);
+    max-width: 64ch; margin-top: 20px;
+  }
+  .hero-note {
+    font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.04em;
+    color: var(--bs-faint); margin-top: 8px;
+  }
+  .hero-note::before { content: "▸ "; }
+  /* blinking command cursor after the headline */
+  h1 .cur {
+    display: inline-block; width: 0.56em; height: 1em; margin-left: 0.12em;
+    background: var(--bs-phosphor); vertical-align: -0.08em; text-shadow: none;
+    animation: blink 1.05s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .statgrid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+    gap: 0; margin: 34px 0 8px; border: 1px solid var(--bs-grid-line);
+  }
+  .stat { padding: 14px 16px; border: 1px solid var(--bs-grid-line); margin: -1px 0 0 -1px; }
+  .stat .n {
+    font-family: var(--font-crt); font-size: 32px; color: var(--bs-bright);
+    line-height: 1; text-shadow: 0 0 8px rgba(51, 255, 51, 0.4);
+  }
+  .stat .l {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--bs-faint); margin-top: 8px;
+  }
+
+  /* ————— cards ————— */
+  .cardgrid { display: grid; gap: 12px; margin: 22px 0; }
+  .cards2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .cards3 { grid-template-columns: repeat(auto-fit, minmax(232px, 1fr)); }
+  .card { background: var(--bs-panel); border: 1px solid var(--bs-grid-line); padding: 16px 18px; }
+  .card p { font-size: 0.9rem; margin-bottom: 0.5em; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .k {
+    display: inline-block; font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--bs-phosphor); color: var(--bs-ink); padding: 1px 7px; margin-bottom: 10px;
+  }
+
+  /* ————— pull quote ————— */
+  blockquote.pull {
+    margin: 26px 0; padding: 14px 20px;
+    border-left: 3px solid var(--bs-phosphor); background: var(--bs-panel);
+    font-size: 1rem; max-width: 72ch;
+  }
+  blockquote.pull p { margin: 0; color: var(--bs-bright); }
+  blockquote.pull cite {
+    display: block; margin-top: 10px; font-style: normal;
+    font-family: var(--font-mono); font-size: 0.7rem; color: var(--bs-faint);
+  }
+
+  /* ————— figures (screenshots framed as CRT captures) ————— */
+  figure {
+    margin: 24px 0 8px; background: var(--bs-panel);
+    border: 1px solid var(--bs-grid-line); padding: 10px; overflow: hidden;
+  }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid #000; }
+  figcaption {
+    font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.03em;
+    color: var(--bs-faint); margin-top: 10px; max-width: 78ch;
+  }
+  figcaption::before { content: "▚ "; color: var(--bs-grid-line); }
+  /* side-by-side captures */
+  .figrow { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 24px 0 8px; }
+  .figrow figure { margin: 0; }
+  .figrow.trio { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  /* portrait phone captures sit smaller and centered */
+  figure.phone img { max-width: 300px; margin: 0 auto; }
+
+  /* ————— footer ————— */
+  .article-foot { border-top: 1px solid var(--bs-grid-line); margin-top: 64px; padding: 30px 0 20px; }
+  .article-foot p {
+    font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.7;
+    color: var(--bs-faint); max-width: 82ch;
+  }
+  .article-foot .credit { margin-top: 12px; opacity: 0.85; }
+
+  :focus-visible { outline: 2px solid var(--bs-phosphor); outline-offset: 2px; }
+
+  /* ————— responsive: site convention — desktop base, max-width steps ————— */
+  @media (max-width: 767px) {
+    .wrap { padding: 0 22px 30px; }
+    .hero { padding: 60px 0 8px; }
+    h1 { font-size: 40px; }
+    .eyebrow { margin-top: 60px; }
+  }
+  @media (max-width: 639px) {
+    body { font-size: 15.5px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 21px; }
+    .stat .n { font-size: 26px; }
+    .hero .lede { font-size: 1.02rem; }
+  }
+
+  @media print {
+    body { background: #fff; color: #062; }
+    body::before { display: none; }
+    a { color: #062; }
+    h1, h2, .stat .n, strong { color: #041; text-shadow: none; }
+    .eyebrow, .card .k, h1 .brand { background: #ddd; color: #041; }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="wrap">
+{{content}}
+  </div>
+</main>
+
+<script>
+  /* GoatCounter (#3): don't double-count the home-page accordion's iframe peek. */
+  if (window.self !== window.top) window.goatcounter = { no_onload: true };
+</script>
+<script data-goatcounter="https://prajno.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
